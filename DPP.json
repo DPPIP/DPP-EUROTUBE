@@ -1,0 +1,13 @@
+[
+    {
+        "ID": 1773871568,
+        "Datum": "2026-03-18T23:06:08",
+        "Temperatur": 20.3,
+        "Feuchtigkeit": 59.0,
+        "Dauer": 2.0,
+        "GTIN": "9999000000001",
+        "Batch": "LOT-2026-12",
+        "Serial": "SN-1773871568",
+        "uri": "https://DPPIP.github.io/DPP-EUROTUBE/01/9999000000001/10/LOT-2026-12/21/SN-1773871568"
+    }
+]
