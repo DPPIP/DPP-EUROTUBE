@@ -23,16 +23,19 @@ from io import BytesIO
 
 PORT        = "COM7"            # Serieller Port (Windows: COM7, Linux: /dev/ttyUSB0)
 BAUD        = 9600
-ARCHIV_JSON = "DPP.json"        # Lokales Archiv aller Einträge
+ARCHIV_JSON = "DPP.json"        # Lokales Archiv aller Einträge (im Repo-Root)
 
 # GS1-Struktur (Prototyp: Präfix 9999 = reserviert für Tests)
 GTIN        = "9999000000001"   # 13-stellige Test-GTIN eures Produkts
-W3ID_BASE   = "https://DPPIP.github.io/DPP-EUROTUBE"   # ← ANPASSEN nach w3id PR
-GITHUB_REPO = "C:/Users/david/Documents/DPP-EUROTUBE"           # ← ANPASSEN: lokaler Git-Pfad
+W3ID_BASE   = "https://DPPIP.github.io/DPP-EUROTUBE"  # ← nach w3id PR: https://w3id.org/hyperloop-dpp
+GITHUB_REPO = "C:/Users/david/Documents/DPP-EUROTUBE"  # ← lokaler Git-Pfad
+
+# Unterordner für Passport-Dateien (HTML + JSON-LD)
+PASSPORT_DIR = "passports"
 
 # Hersteller-Metadaten (erscheinen im JSON-LD)
-HERSTELLER  = "IP3 DPP FHNW"
-PRODUKT     = "Beton-Fertigelement EUROTUBE"
+HERSTELLER  = "Eurotube – FHNW"
+PRODUKT     = "Beton-Fertigelement Typ A"
 LAND        = "CH"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -291,7 +294,10 @@ def github_push(serial_nr: str, dateien: list[str]):
 
     try:
         for pfad in dateien:
-            ziel = os.path.join(GITHUB_REPO, os.path.basename(pfad))
+            # Unterordner-Struktur beibehalten (z.B. passports/SN-xxx.html)
+            # ARCHIV_JSON liegt im Root → kein Unterordner
+            ziel = os.path.join(GITHUB_REPO, pfad)
+            os.makedirs(os.path.dirname(ziel) or GITHUB_REPO, exist_ok=True)
             with open(pfad, "rb") as f:
                 inhalt = f.read()
             with open(ziel, "wb") as f:
@@ -331,30 +337,34 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
         "uri":          uri
     }
 
-    # 1) Lokales JSON-Archiv aktualisieren
+    # 1) Lokales JSON-Archiv aktualisieren (bleibt im Root)
     archiv = json.load(open(ARCHIV_JSON)) if os.path.exists(ARCHIV_JSON) else []
     archiv.append(eintrag)
     with open(ARCHIV_JSON, "w", encoding="utf-8") as f:
         json.dump(archiv, f, indent=4, ensure_ascii=False)
 
-    # 2) JSON-LD schreiben
-    jsonld      = erstelle_jsonld(eintrag)
-    jsonld_datei = f"{sn}.jsonld"
+    # 2) Unterordner anlegen
+    os.makedirs(PASSPORT_DIR, exist_ok=True)
+
+    # 3) JSON-LD schreiben
+    jsonld       = erstelle_jsonld(eintrag)
+    jsonld_datei = os.path.join(PASSPORT_DIR, f"{sn}.jsonld")
     with open(jsonld_datei, "w", encoding="utf-8") as f:
         json.dump(jsonld, f, indent=2, ensure_ascii=False)
 
-    # 3) QR Code
+    # 4) QR Code
     qr_b64 = erstelle_qr_b64(uri)
 
-    # 4) HTML schreiben
-    html_datei = f"{sn}.html"
+    # 5) HTML schreiben
+    html_datei = os.path.join(PASSPORT_DIR, f"{sn}.html")
     with open(html_datei, "w", encoding="utf-8") as f:
         f.write(erstelle_html(eintrag, jsonld, qr_b64))
 
     print(f"  [✓] {sn} | {dauer}s | {t_med}°C | {h_med}%")
     print(f"  [✓] URI: {uri}")
+    print(f"  [✓] Dateien: {PASSPORT_DIR}/{sn}.html + .jsonld")
 
-    # 5) GitHub Push
+    # 6) GitHub Push (ARCHIV_JSON liegt im Root, Passport-Dateien im Unterordner)
     github_push(sn, [jsonld_datei, html_datei, ARCHIV_JSON])
 
     return sn, uri
