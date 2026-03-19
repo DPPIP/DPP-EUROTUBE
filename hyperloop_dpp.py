@@ -428,11 +428,12 @@ def lese_seriell():
                 root.update()
 
                 sn, uri = speichere_und_publiziere(t_med, h_med, dauer)
+                html_url = f"{W3ID_BASE}/passports/{sn}.html"
 
                 status_label.config(
                     text=f"Status: FERTIG – {sn}", fg="gray")
                 servo_label.config(text="Schalung: OFFEN", fg="#2980b9")
-                uri_label.config(text=uri, fg="#2D5A3D")
+                uri_label.config(text=html_url, fg="#2D5A3D")
 
         except Exception:
             pass
