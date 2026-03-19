@@ -344,28 +344,30 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     with open(ARCHIV_JSON, "w", encoding="utf-8") as f:
         json.dump(archiv, f, indent=4, ensure_ascii=False)
 
-    # 2) Unterordner anlegen
+    # 2) GS1-Pfad anlegen: 01/{gtin}/10/{batch}/21/{sn}/
+    gs1_dir = os.path.join("01", GTIN, "10", batch, "21", sn)
+    os.makedirs(gs1_dir, exist_ok=True)
     os.makedirs(PASSPORT_DIR, exist_ok=True)
 
-    # 3) JSON-LD schreiben
+    # 3) JSON-LD schreiben (im passports-Ordner)
     jsonld       = erstelle_jsonld(eintrag)
     jsonld_datei = os.path.join(PASSPORT_DIR, f"{sn}.jsonld")
     with open(jsonld_datei, "w", encoding="utf-8") as f:
         json.dump(jsonld, f, indent=2, ensure_ascii=False)
 
-    # 4) QR Code
+    # 4) QR Code zeigt auf GS1/W3ID-URI
     qr_b64 = erstelle_qr_b64(uri)
 
-    # 5) HTML schreiben
-    html_datei = os.path.join(PASSPORT_DIR, f"{sn}.html")
+    # 5) HTML als index.html unter GS1-Pfad → URI funktioniert direkt
+    html_datei = os.path.join(gs1_dir, "index.html")
     with open(html_datei, "w", encoding="utf-8") as f:
         f.write(erstelle_html(eintrag, jsonld, qr_b64))
 
     print(f"  [OK] {sn} | {dauer}s | {t_med}°C | {h_med}%")
     print(f"  [OK] URI: {uri}")
-    print(f"  [OK] Dateien: {PASSPORT_DIR}/{sn}.html + .jsonld")
+    print(f"  [OK] Dateien: {gs1_dir}/index.html + {sn}.jsonld")
 
-    # 6) GitHub Push (ARCHIV_JSON liegt im Root, Passport-Dateien im Unterordner)
+    # 6) GitHub Push
     github_push(sn, [jsonld_datei, html_datei, ARCHIV_JSON])
 
     return sn, uri
@@ -428,12 +430,11 @@ def lese_seriell():
                 root.update()
 
                 sn, uri = speichere_und_publiziere(t_med, h_med, dauer)
-                html_url = f"{W3ID_BASE}/passports/{sn}.html"
 
                 status_label.config(
                     text=f"Status: FERTIG – {sn}", fg="gray")
                 servo_label.config(text="Schalung: OFFEN", fg="#2980b9")
-                uri_label.config(text=html_url, fg="#2D5A3D")
+                uri_label.config(text=uri, fg="#2D5A3D")
                 lade_liste()
 
         except Exception:
@@ -518,8 +519,12 @@ def oeffne_ausgewaehlt(event):
         return
     text = listbox.get(sel[0])
     sn = text.strip().split("|")[0].strip()
-    url = f"{W3ID_BASE}/passports/{sn}.html"
-    webbrowser.open(url)
+    if os.path.exists(ARCHIV_JSON):
+        eintraege = json.load(open(ARCHIV_JSON, encoding="utf-8"))
+        for e in eintraege:
+            if e["Serial"] == sn:
+                webbrowser.open(e["uri"])
+                return
 
 listbox.bind("<Double-Button-1>", oeffne_ausgewaehlt)
 listbox.bind("<Return>", oeffne_ausgewaehlt)
