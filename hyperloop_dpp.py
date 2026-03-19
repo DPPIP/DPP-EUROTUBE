@@ -304,7 +304,7 @@ def github_push(serial_nr: str, dateien: list[str]):
             with open(ziel, "wb") as f:
                 f.write(inhalt)
 
-        subprocess.run(["git", "-C", GITHUB_REPO, "add", "."],        check=True)
+        subprocess.run(["git", "-C", GITHUB_REPO, "add"] + [os.path.abspath(os.path.join(GITHUB_REPO, p)) for p in dateien], check=True)
         subprocess.run(["git", "-C", GITHUB_REPO, "commit", "-m",
                          f"DPP {serial_nr} hinzugefügt"],              check=True)
         subprocess.run(["git", "-C", GITHUB_REPO, "push"],             check=True)
@@ -428,14 +428,13 @@ def lese_seriell():
                 root.update()
 
                 sn, uri = speichere_und_publiziere(t_med, h_med, dauer)
-                html_path = os.path.abspath(os.path.join(PASSPORT_DIR, f"{sn}.html"))
                 html_url = f"{W3ID_BASE}/passports/{sn}.html"
 
                 status_label.config(
                     text=f"Status: FERTIG – {sn}", fg="gray")
                 servo_label.config(text="Schalung: OFFEN", fg="#2980b9")
                 uri_label.config(text=html_url, fg="#2D5A3D")
-                uri_label._local_path = html_path
+                lade_liste()
 
         except Exception:
             pass
@@ -447,7 +446,7 @@ def lese_seriell():
 
 root = tk.Tk()
 root.title("Hyperloop DPP Steuerung")
-root.geometry("480x320")
+root.geometry("640x520")
 root.configure(bg="#F4F1EC")
 
 def lbl(text, font_size=10, bold=False, fg="gray", bg="#F4F1EC"):
@@ -465,12 +464,12 @@ status_label.pack(pady=2)
 
 uri_label = lbl("", 8, fg="#2D5A3D")
 uri_label.pack(pady=2)
-uri_label.bind("<Button-1>", lambda e: webbrowser.open(f"file:///{uri_label._local_path}") if getattr(uri_label, "_local_path", None) else None)
+uri_label.bind("<Button-1>", lambda e: webbrowser.open(uri_label.cget("text")) if uri_label.cget("text") else None)
 uri_label.bind("<Enter>", lambda e: uri_label.config(cursor="hand2", font=("Arial", 8, "underline")))
 uri_label.bind("<Leave>", lambda e: uri_label.config(cursor="", font=("Arial", 8)))
 
 frame = tk.Frame(root, bg="#F4F1EC")
-frame.pack(pady=14)
+frame.pack(pady=10)
 
 tk.Button(frame, text="Schliessen & Start", command=sende_start,
           font=("Arial", 12), bg="#d5e8d4", fg="#1A1916",
@@ -480,7 +479,52 @@ tk.Button(frame, text="Öffnen & Stopp", command=sende_stopp,
           font=("Arial", 12), bg="#f8cecc", fg="#1A1916",
           relief="flat", padx=16, pady=8).grid(row=0, column=1, padx=8)
 
-lbl(f"GTIN: {GTIN}  ·  {W3ID_BASE}", 8, fg="#7A7870").pack(pady=(8, 0))
+lbl(f"GTIN: {GTIN}  ·  {W3ID_BASE}", 8, fg="#7A7870").pack(pady=(4, 0))
+
+# ─── DPP Liste ───────────────────────────────────────────────────────────────
+
+lbl("ERSTELLTE PASSPORTS", 8, bold=True, fg="#7A7870").pack(pady=(12, 2))
+
+list_frame = tk.Frame(root, bg="#F4F1EC")
+list_frame.pack(fill="both", expand=True, padx=16, pady=(0, 12))
+
+scrollbar = tk.Scrollbar(list_frame)
+scrollbar.pack(side="right", fill="y")
+
+listbox = tk.Listbox(
+    list_frame,
+    yscrollcommand=scrollbar.set,
+    font=("Courier", 9),
+    bg="#FDFCFA", fg="#1A1916",
+    selectbackground="#2D5A3D", selectforeground="#fff",
+    relief="flat", borderwidth=1,
+    activestyle="none",
+    height=8
+)
+listbox.pack(side="left", fill="both", expand=True)
+scrollbar.config(command=listbox.yview)
+
+def lade_liste():
+    """Lädt alle Einträge aus DPP.json in die Listbox."""
+    listbox.delete(0, "end")
+    if os.path.exists(ARCHIV_JSON):
+        eintraege = json.load(open(ARCHIV_JSON, encoding="utf-8"))
+        for e in reversed(eintraege):
+            listbox.insert("end", f"  {e['Serial']}  |  {e['Datum']}  |  {e['Temperatur']}°C  |  {e['Feuchtigkeit']}%  |  {e['Dauer']}s")
+
+def oeffne_ausgewaehlt(event):
+    sel = listbox.curselection()
+    if not sel:
+        return
+    text = listbox.get(sel[0])
+    sn = text.strip().split("|")[0].strip()
+    url = f"{W3ID_BASE}/passports/{sn}.html"
+    webbrowser.open(url)
+
+listbox.bind("<Double-Button-1>", oeffne_ausgewaehlt)
+listbox.bind("<Return>", oeffne_ausgewaehlt)
+
+lade_liste()
 
 root.after(100, lese_seriell)
 root.mainloop()
