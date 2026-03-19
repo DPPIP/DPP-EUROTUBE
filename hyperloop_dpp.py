@@ -428,12 +428,14 @@ def lese_seriell():
                 root.update()
 
                 sn, uri = speichere_und_publiziere(t_med, h_med, dauer)
+                html_path = os.path.abspath(os.path.join(PASSPORT_DIR, f"{sn}.html"))
                 html_url = f"{W3ID_BASE}/passports/{sn}.html"
 
                 status_label.config(
                     text=f"Status: FERTIG – {sn}", fg="gray")
                 servo_label.config(text="Schalung: OFFEN", fg="#2980b9")
                 uri_label.config(text=html_url, fg="#2D5A3D")
+                uri_label._local_path = html_path
 
         except Exception:
             pass
@@ -463,7 +465,7 @@ status_label.pack(pady=2)
 
 uri_label = lbl("", 8, fg="#2D5A3D")
 uri_label.pack(pady=2)
-uri_label.bind("<Button-1>", lambda e: webbrowser.open(uri_label.cget("text")) if uri_label.cget("text") else None)
+uri_label.bind("<Button-1>", lambda e: webbrowser.open(f"file:///{uri_label._local_path}") if getattr(uri_label, "_local_path", None) else None)
 uri_label.bind("<Enter>", lambda e: uri_label.config(cursor="hand2", font=("Arial", 8, "underline")))
 uri_label.bind("<Leave>", lambda e: uri_label.config(cursor="", font=("Arial", 8)))
 
