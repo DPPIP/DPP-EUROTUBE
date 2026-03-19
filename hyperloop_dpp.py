@@ -307,7 +307,7 @@ def github_push(serial_nr: str, dateien: list[str]):
         subprocess.run(["git", "-C", GITHUB_REPO, "commit", "-m",
                          f"DPP {serial_nr} hinzugefügt"],              check=True)
         subprocess.run(["git", "-C", GITHUB_REPO, "push"],             check=True)
-        print(f"  [✓] GitHub Push erfolgreich: {serial_nr}")
+        print(f"  [OK] GitHub Push erfolgreich: {serial_nr}")
 
     except subprocess.CalledProcessError as e:
         print(f"  [!] Git-Fehler: {e}")
@@ -360,9 +360,9 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     with open(html_datei, "w", encoding="utf-8") as f:
         f.write(erstelle_html(eintrag, jsonld, qr_b64))
 
-    print(f"  [✓] {sn} | {dauer}s | {t_med}°C | {h_med}%")
-    print(f"  [✓] URI: {uri}")
-    print(f"  [✓] Dateien: {PASSPORT_DIR}/{sn}.html + .jsonld")
+    print(f"  [OK] {sn} | {dauer}s | {t_med}°C | {h_med}%")
+    print(f"  [OK] URI: {uri}")
+    print(f"  [OK] Dateien: {PASSPORT_DIR}/{sn}.html + .jsonld")
 
     # 6) GitHub Push (ARCHIV_JSON liegt im Root, Passport-Dateien im Unterordner)
     github_push(sn, [jsonld_datei, html_datei, ARCHIV_JSON])
@@ -374,7 +374,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
 
 try:
     ser = serial.Serial(PORT, BAUD, timeout=0.1)
-    print(f"[✓] Logger aktiv an {PORT}")
+    print(f"[OK] Logger aktiv an {PORT}")
 except Exception as e:
     print(f"[!] Serielle Verbindung fehlgeschlagen: {e}")
     exit(1)
@@ -385,13 +385,13 @@ zyklus: dict = {"start": None, "t": [], "h": []}
 def sende_start():
     ser.write(b"C")
     ser.flush()
-    print("[→] Befehl: CLOSE + START")
+    print("[>>] Befehl: CLOSE + START")
 
 
 def sende_stopp():
     ser.write(b"O")
     ser.flush()
-    print("[→] Befehl: OPEN + STOPP")
+    print("[>>] Befehl: OPEN + STOPP")
 
 
 def lese_seriell():
