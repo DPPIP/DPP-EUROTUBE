@@ -1,0 +1,55 @@
+{
+  "@context": {
+    "@vocab": "https://schema.org/",
+    "gs1": "https://www.gs1.org/voc/",
+    "espr": "https://espr.ec.europa.eu/vocab/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "qudt": "http://qudt.org/schema/qudt/"
+  },
+  "@type": "Product",
+  "@id": "https://w3id.org/hyperloop-dpp/01/9999000000001/10/LOT-2026-13/21/SN-1774349180",
+  "gs1:gtin": "9999000000001",
+  "gs1:batchLotNumber": "LOT-2026-13",
+  "gs1:serialNumber": "SN-1774349180",
+  "gs1:digitalLink": "https://w3id.org/hyperloop-dpp/01/9999000000001/10/LOT-2026-13/21/SN-1774349180",
+  "name": "Beton-Fertigelement Typ A",
+  "description": "Beton-Fertigelement, hergestellt im Hyperloop-Schalungsprozess.",
+  "productionDate": "2026-03-24T11:46:20",
+  "manufacturer": {
+    "@type": "Organization",
+    "name": "Eurotube – FHNW",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "CH"
+    }
+  },
+  "espr:productionData": {
+    "espr:averageTemperature": {
+      "@value": 22.1,
+      "@type": "xsd:decimal",
+      "qudt:unit": "qudt:DEG_C"
+    },
+    "espr:averageHumidity": {
+      "@value": 37.0,
+      "@type": "xsd:decimal",
+      "qudt:unit": "qudt:PERCENT"
+    },
+    "espr:curingDuration": {
+      "@value": 1.4,
+      "@type": "xsd:decimal",
+      "qudt:unit": "qudt:SEC"
+    }
+  },
+  "espr:sustainabilityData": {
+    "espr:recyclabilityStatement": "Beton 100% recycelbar gemäss SIA 262",
+    "espr:substancesOfConcern": "keine",
+    "espr:carbonFootprint": "Angabe ausstehend"
+  },
+  "espr:complianceDeclaration": {
+    "espr:regulation": "EU 2024/1781 (ESPR)",
+    "espr:applicability": "Delegierter Akt Bauprodukte – erwartet 2029",
+    "espr:status": "Prototyp / Forschung",
+    "espr:issuedBy": "Eurotube – FHNW",
+    "espr:issueDate": "2026-03-24T11:46:20"
+  }
+}
