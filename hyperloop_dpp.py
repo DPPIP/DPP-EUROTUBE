@@ -266,7 +266,7 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
 
   <p class="footer">
     Erzeugt von Hyperloop Steuerung &nbsp;·&nbsp; {eintrag['Datum']}<br>
-    JSON-LD: <a href="{W3ID_BASE}/passports/{eintrag['Serial']}.jsonld" style="color:var(--accent)">{eintrag['Serial']}.jsonld</a>
+    JSON-LD: <a href="{GITHUB_PAGES}/passports/{eintrag['Serial']}.jsonld" style="color:var(--accent)">{eintrag['Serial']}.jsonld</a>
   </p>
 </div>
 </body>
