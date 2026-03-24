@@ -20,5 +20,16 @@
         "Batch": "LOT-2026-13",
         "Serial": "SN-1774361863",
         "uri": "https://w3id.org/hyperloop-dpp/01/9999000000001/10/LOT-2026-13/21/SN-1774361863"
+    },
+    {
+        "ID": 1774362624,
+        "Datum": "2026-03-24T15:30:24",
+        "Temperatur": 22.5,
+        "Feuchtigkeit": 42.4,
+        "Dauer": 9.7,
+        "GTIN": "9999000000001",
+        "Batch": "LOT-2026-13",
+        "Serial": "SN-1774362624",
+        "uri": "https://w3id.org/hyperloop-dpp/01/9999000000001/10/LOT-2026-13/21/SN-1774362624"
     }
 ]
