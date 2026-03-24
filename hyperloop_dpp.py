@@ -371,7 +371,8 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
         json.dump(jsonld, f, indent=2, ensure_ascii=False)
 
     # 4) QR Code zeigt auf GS1/W3ID-URI
-    qr_b64 = erstelle_qr_b64(uri)
+    qr_url = uri.replace(W3ID_BASE, GITHUB_PAGES)  # Fallback bis W3ID-Fix gemergt
+    qr_b64 = erstelle_qr_b64(qr_url)
 
     # 5) HTML als index.html unter GS1-Pfad → URI funktioniert direkt
     html_datei = os.path.join(gs1_dir, "index.html")
