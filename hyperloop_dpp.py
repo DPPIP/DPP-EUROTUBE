@@ -251,7 +251,7 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
 
   <p class="footer">
     Erzeugt von Hyperloop Steuerung &nbsp;·&nbsp; {eintrag['Datum']}<br>
-    JSON-LD: <a href="{uri.replace('/01/', '/data/01/')}" style="color:var(--accent)">{eintrag['Serial']}.jsonld</a>
+    JSON-LD: <a href="{W3ID_BASE}/passports/{eintrag['Serial']}.jsonld" style="color:var(--accent)">{eintrag['Serial']}.jsonld</a>
   </p>
 </div>
 </body>
@@ -513,6 +513,19 @@ def lade_liste():
         for e in reversed(eintraege):
             listbox.insert("end", f"  {e['Serial']}  |  {e['Datum']}  |  {e['Temperatur']}°C  |  {e['Feuchtigkeit']}%  |  {e['Dauer']}s")
 
+def zeige_link(event):
+    """Zeigt den Link des ausgewählten Eintrags im Link-Label an."""
+    sel = listbox.curselection()
+    if not sel:
+        return
+    sn = listbox.get(sel[0]).strip().split("|")[0].strip()
+    if os.path.exists(ARCHIV_JSON):
+        eintraege = json.load(open(ARCHIV_JSON, encoding="utf-8"))
+        for e in eintraege:
+            if e["Serial"] == sn:
+                liste_link_label.config(text=e["uri"], fg="#2D5A3D")
+                return
+
 def oeffne_ausgewaehlt(event):
     sel = listbox.curselection()
     if not sel:
@@ -526,8 +539,15 @@ def oeffne_ausgewaehlt(event):
                 webbrowser.open(e["uri"])
                 return
 
+listbox.bind("<<ListboxSelect>>", zeige_link)
 listbox.bind("<Double-Button-1>", oeffne_ausgewaehlt)
 listbox.bind("<Return>", oeffne_ausgewaehlt)
+
+liste_link_label = tk.Label(root, text="", font=("Arial", 8), fg="#2D5A3D", bg="#F4F1EC", cursor="hand2")
+liste_link_label.pack(pady=(0, 4))
+liste_link_label.bind("<Button-1>", lambda e: webbrowser.open(liste_link_label.cget("text")) if liste_link_label.cget("text") else None)
+liste_link_label.bind("<Enter>", lambda e: liste_link_label.config(font=("Arial", 8, "underline")))
+liste_link_label.bind("<Leave>", lambda e: liste_link_label.config(font=("Arial", 8)))
 
 lade_liste()
 
