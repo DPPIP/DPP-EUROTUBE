@@ -16,6 +16,8 @@ import os
 import datetime
 import base64
 import subprocess
+import threading
+import urllib.request
 import tkinter as tk
 import webbrowser
 from io import BytesIO
@@ -28,8 +30,9 @@ ARCHIV_JSON = "DPP.json"        # Lokales Archiv aller Einträge (im Repo-Root)
 
 # GS1-Struktur (Prototyp: Präfix 9999 = reserviert für Tests)
 GTIN        = "9999000000001"   # 13-stellige Test-GTIN eures Produkts
-W3ID_BASE   = "https://w3id.org/hyperloop-dpp"  # PR #5843 gemergt 19.03.2026
-GITHUB_REPO = "C:/Users/david/Documents/DPP-EUROTUBE"  # ← lokaler Git-Pfad
+W3ID_BASE      = "https://w3id.org/hyperloop-dpp"          # PR #5843 gemergt 19.03.2026
+GITHUB_PAGES   = "https://DPPIP.github.io/DPP-EUROTUBE"   # Fallback wenn w3id nicht erreichbar
+GITHUB_REPO    = "C:/Users/david/Documents/DPP-EUROTUBE"  # ← lokaler Git-Pfad
 
 # Unterordner für Passport-Dateien (HTML + JSON-LD)
 PASSPORT_DIR = "passports"
@@ -40,6 +43,18 @@ PRODUKT     = "Beton-Fertigelement Typ A"
 LAND        = "CH"
 
 # ─────────────────────────────────────────────────────────────────────────────
+
+
+def oeffne_dpp(uri: str):
+    """Öffnet w3id.org URI – fällt auf GitHub Pages zurück wenn nicht erreichbar."""
+    github_url = uri.replace(W3ID_BASE, GITHUB_PAGES)
+    def _open():
+        try:
+            urllib.request.urlopen(urllib.request.Request(uri, method="HEAD"), timeout=3)
+            webbrowser.open(uri)
+        except Exception:
+            webbrowser.open(github_url)
+    threading.Thread(target=_open, daemon=True).start()
 
 
 def gs1_uri(gtin: str, batch: str, serial_nr: str) -> str:
@@ -465,7 +480,7 @@ status_label.pack(pady=2)
 
 uri_label = lbl("", 8, fg="#2D5A3D")
 uri_label.pack(pady=2)
-uri_label.bind("<Button-1>", lambda e: webbrowser.open(uri_label.cget("text")) if uri_label.cget("text") else None)
+uri_label.bind("<Button-1>", lambda e: oeffne_dpp(uri_label.cget("text")) if uri_label.cget("text") else None)
 uri_label.bind("<Enter>", lambda e: uri_label.config(cursor="hand2", font=("Arial", 8, "underline")))
 uri_label.bind("<Leave>", lambda e: uri_label.config(cursor="", font=("Arial", 8)))
 
@@ -536,7 +551,7 @@ def oeffne_ausgewaehlt(event):
         eintraege = json.load(open(ARCHIV_JSON, encoding="utf-8"))
         for e in eintraege:
             if e["Serial"] == sn:
-                webbrowser.open(e["uri"])
+                oeffne_dpp(e["uri"])
                 return
 
 listbox.bind("<<ListboxSelect>>", zeige_link)
@@ -545,7 +560,7 @@ listbox.bind("<Return>", oeffne_ausgewaehlt)
 
 liste_link_label = tk.Label(root, text="", font=("Arial", 8), fg="#2D5A3D", bg="#F4F1EC", cursor="hand2")
 liste_link_label.pack(pady=(0, 4))
-liste_link_label.bind("<Button-1>", lambda e: webbrowser.open(liste_link_label.cget("text")) if liste_link_label.cget("text") else None)
+liste_link_label.bind("<Button-1>", lambda e: oeffne_dpp(liste_link_label.cget("text")) if liste_link_label.cget("text") else None)
 liste_link_label.bind("<Enter>", lambda e: liste_link_label.config(font=("Arial", 8, "underline")))
 liste_link_label.bind("<Leave>", lambda e: liste_link_label.config(font=("Arial", 8)))
 
