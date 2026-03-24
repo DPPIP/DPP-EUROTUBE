@@ -28,7 +28,7 @@ ARCHIV_JSON = "DPP.json"        # Lokales Archiv aller Einträge (im Repo-Root)
 
 # GS1-Struktur (Prototyp: Präfix 9999 = reserviert für Tests)
 GTIN        = "9999000000001"   # 13-stellige Test-GTIN eures Produkts
-W3ID_BASE   = "https://DPPIP.github.io/DPP-EUROTUBE"  # ← nach w3id PR: https://w3id.org/hyperloop-dpp
+W3ID_BASE   = "https://w3id.org/hyperloop-dpp"  # PR #5843 gemergt 19.03.2026
 GITHUB_REPO = "C:/Users/david/Documents/DPP-EUROTUBE"  # ← lokaler Git-Pfad
 
 # Unterordner für Passport-Dateien (HTML + JSON-LD)
