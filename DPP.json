@@ -20,5 +20,16 @@
         "Batch": "LOT-2026-13",
         "Serial": "SN-1774343213",
         "uri": "https://DPPIP.github.io/DPP-EUROTUBE/01/9999000000001/10/LOT-2026-13/21/SN-1774343213"
+    },
+    {
+        "ID": 1774343225,
+        "Datum": "2026-03-24T10:07:05",
+        "Temperatur": 22.2,
+        "Feuchtigkeit": 38.0,
+        "Dauer": 5.6,
+        "GTIN": "9999000000001",
+        "Batch": "LOT-2026-13",
+        "Serial": "SN-1774343225",
+        "uri": "https://DPPIP.github.io/DPP-EUROTUBE/01/9999000000001/10/LOT-2026-13/21/SN-1774343225"
     }
 ]
