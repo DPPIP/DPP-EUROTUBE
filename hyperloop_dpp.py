@@ -266,7 +266,7 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
 
   <p class="footer">
     Erzeugt von Hyperloop Steuerung &nbsp;·&nbsp; {eintrag['Datum']}<br>
-    JSON-LD: <a href="{GITHUB_PAGES}/passports/{eintrag['Serial']}.jsonld" style="color:var(--accent)">{eintrag['Serial']}.jsonld</a>
+    JSON-LD: <a href="{eintrag['Serial']}.jsonld" style="color:var(--accent)">{eintrag['Serial']}.jsonld</a>
   </p>
 </div>
 </body>
@@ -362,11 +362,10 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     # 2) GS1-Pfad anlegen: 01/{gtin}/10/{batch}/21/{sn}/
     gs1_dir = os.path.join("01", GTIN, "10", batch, "21", sn)
     os.makedirs(gs1_dir, exist_ok=True)
-    os.makedirs(PASSPORT_DIR, exist_ok=True)
 
-    # 3) JSON-LD schreiben (im passports-Ordner)
+    # 3) JSON-LD schreiben (im GS1-Pfad neben index.html)
     jsonld       = erstelle_jsonld(eintrag)
-    jsonld_datei = os.path.join(PASSPORT_DIR, f"{sn}.jsonld")
+    jsonld_datei = os.path.join(gs1_dir, f"{sn}.jsonld")
     with open(jsonld_datei, "w", encoding="utf-8") as f:
         json.dump(jsonld, f, indent=2, ensure_ascii=False)
 
