@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batch Scanner – Digital Product Passport</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#F4F1EC;--card:#FDFCFA;--ink:#1A1916;--muted:#7A7870;
+    --accent:#2D5A3D;--accent-light:#EAF2ED;--border:#DDD9D1;
+    --danger:#A03030;--danger-light:#FBEAEA;
+    --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif
+  }
+  body{background:var(--bg);font-family:var(--sans);color:var(--ink);min-height:100vh;padding:0}
+
+  .wrap{max-width:520px;margin:0 auto;padding:2rem 1rem 3rem}
+
+  /* Badge & Header */
+  .badge{background:var(--accent);color:#fff;font-family:var(--mono);font-size:10px;
+    font-weight:500;letter-spacing:.12em;padding:4px 10px;border-radius:4px;
+    text-transform:uppercase;display:inline-block}
+  h1{font-size:24px;font-weight:300;letter-spacing:-.02em;line-height:1.2;margin:.5rem 0 .25rem}
+  .sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:1.5rem}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:1.25rem;margin-bottom:1rem}
+  .card-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-family:var(--mono);margin-bottom:.75rem}
+
+  /* Scanner */
+  #scanner-box{width:100%;border-radius:12px;overflow:hidden;margin-bottom:1.25rem;
+    background:#000;min-height:250px;position:relative}
+  #reader{width:100%}
+  #reader video{border-radius:12px}
+
+  /* Counter */
+  .counter{font-family:var(--mono);font-size:14px;color:var(--muted);margin-bottom:1rem;
+    text-align:center}
+  .counter strong{color:var(--ink)}
+
+  /* Scan list */
+  .scan-list{list-style:none;margin-bottom:1.5rem}
+  .scan-item{display:flex;align-items:center;gap:.75rem;padding:.65rem .85rem;
+    border:1px solid var(--border);border-radius:8px;margin-bottom:.5rem;
+    background:var(--card);font-family:var(--mono);font-size:13px;
+    animation:slideIn .3s ease-out}
+  .scan-item.empty{color:var(--muted);border-style:dashed;background:transparent}
+  .scan-item .icon{width:20px;text-align:center;flex-shrink:0}
+  .scan-item .icon.check{color:var(--accent)}
+  .scan-item .sn{flex:1}
+  .scan-item .remove{background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:16px;padding:2px 6px;border-radius:4px;transition:all .15s}
+  .scan-item .remove:hover{color:var(--danger);background:var(--danger-light)}
+
+  @keyframes slideIn{
+    from{opacity:0;transform:translateY(-8px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* Warning toast */
+  .toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%);
+    background:var(--danger);color:#fff;font-family:var(--mono);font-size:12px;
+    padding:8px 16px;border-radius:8px;z-index:999;opacity:0;
+    transition:opacity .3s;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* Buttons */
+  .btn{display:block;width:100%;padding:.85rem;border:none;border-radius:10px;
+    font-family:var(--sans);font-size:15px;font-weight:500;cursor:pointer;
+    text-align:center;transition:all .2s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+  .btn-primary:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+  .btn-secondary{background:var(--card);color:var(--ink);border:1px solid var(--border);
+    margin-top:.5rem}
+  .btn-secondary:hover{background:var(--accent-light)}
+
+  .btn-row{display:flex;gap:.5rem;margin-top:1rem}
+  .btn-row .btn{flex:1}
+
+  /* Batch view */
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.25rem}
+  .summary-item{text-align:center}
+  .summary-item .val{font-size:20px;font-weight:500;color:var(--accent);font-family:var(--mono)}
+  .summary-item .label{font-size:10px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.06em;font-family:var(--mono);margin-top:2px}
+
+  .element-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:1rem 1.15rem;margin-bottom:.75rem}
+  .element-card .sn-head{font-family:var(--mono);font-size:14px;font-weight:500;margin-bottom:.35rem}
+  .element-card .data-row{font-size:13px;color:var(--muted);font-family:var(--mono);margin-bottom:.2rem}
+  .element-card .link{display:inline-block;margin-top:.4rem;font-size:12px;
+    color:var(--accent);text-decoration:none;font-family:var(--mono)}
+  .element-card .link:hover{text-decoration:underline}
+
+  .warning-box{background:var(--danger-light);border:1px solid #e0b0b0;border-radius:8px;
+    padding:.75rem 1rem;font-size:13px;color:var(--danger);margin-bottom:1rem;
+    font-family:var(--mono)}
+
+  .copied-feedback{display:inline-block;opacity:0;transition:opacity .3s;margin-left:.5rem;
+    color:var(--accent);font-size:13px}
+  .copied-feedback.show{opacity:1}
+
+  /* Footer */
+  .footer{text-align:center;font-size:11px;color:var(--muted);font-family:var(--mono);
+    margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border)}
+
+  /* Hide views */
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- SCANNER VIEW -->
+<div id="scanner-view" class="wrap">
+  <span class="badge">Digital Product Passport</span>
+  <h1>Batch Scanner</h1>
+  <p class="sub">QR-Codes scannen, um Batch zu erstellen</p>
+
+  <div id="scanner-box">
+    <div id="reader"></div>
+  </div>
+
+  <p class="counter">Gescannt: <strong><span id="count">0</span>/5</strong></p>
+
+  <ul id="scan-list" class="scan-list"></ul>
+
+  <button id="btn-create" class="btn btn-primary" disabled onclick="createBatch()">
+    Batch erstellen
+  </button>
+</div>
+
+<!-- BATCH VIEW -->
+<div id="batch-view" class="wrap hidden">
+  <span class="badge">Digital Product Passport</span>
+  <h1>Batch-Ansicht</h1>
+  <p class="sub" id="batch-meta"></p>
+
+  <div id="summary-card" class="card">
+    <div class="card-label">Zusammenfassung</div>
+    <div id="summary-grid" class="summary-grid"></div>
+  </div>
+
+  <div id="warning-box" class="warning-box hidden"></div>
+  <div id="elements-container"></div>
+
+  <button class="btn btn-primary" onclick="copyLink()">
+    Link kopieren <span id="copied-check" class="copied-feedback">&#10003;</span>
+  </button>
+  <button class="btn btn-secondary" onclick="goToScanner()">Neuen Batch scannen</button>
+
+  <div class="footer">Eurotube &ndash; FHNW | Hyperloop DPP System</div>
+</div>
+
+<!-- Footer for scanner view -->
+<div id="scanner-footer" class="wrap" style="padding-top:0">
+  <div class="footer">Eurotube &ndash; FHNW | Hyperloop DPP System</div>
+</div>
+
+<script>
+const MAX_ITEMS = 5;
+const DPP_JSON_URL = 'https://DPPIP.github.io/DPP-EUROTUBE/DPP.json';
+const SN_REGEX = /SN-\d+/;
+
+let scannedSNs = [];
+let html5QrCode = null;
+let audioCtx = null;
+
+// ─── INIT ───
+function init() {
+  const hash = window.location.hash.replace('#', '');
+  if (hash && hash.startsWith('SN-')) {
+    showBatchView(hash.split(','));
+  } else {
+    showScannerView();
+  }
+}
+
+// ─── AUDIO BEEP ───
+function playBeep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.value = 0.3;
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (e) { /* silent fail */ }
+}
+
+// ─── TOAST ───
+function showToast(msg, duration) {
+  duration = duration || 2000;
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, duration);
+}
+
+// ─── SCANNER VIEW ───
+function showScannerView() {
+  document.getElementById('scanner-view').classList.remove('hidden');
+  document.getElementById('scanner-footer').classList.remove('hidden');
+  document.getElementById('batch-view').classList.add('hidden');
+  scannedSNs = [];
+  renderScanList();
+  startScanner();
+}
+
+function startScanner() {
+  if (html5QrCode) {
+    try { html5QrCode.stop(); } catch (e) {}
+  }
+  html5QrCode = new Html5Qrcode('reader');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+    onScanSuccess,
+    function() {}
+  ).catch(function(err) {
+    document.getElementById('scanner-box').innerHTML =
+      '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px">' +
+      'Kamera-Zugriff nicht m&ouml;glich.<br>Bitte Berechtigung erteilen.' +
+      '</div>';
+  });
+}
+
+function onScanSuccess(decodedText) {
+  const match = decodedText.match(SN_REGEX);
+  if (!match) return;
+
+  const sn = match[0];
+
+  // Duplicate check
+  if (scannedSNs.indexOf(sn) !== -1) {
+    showToast('Bereits gescannt: ' + sn);
+    return;
+  }
+
+  // Max check
+  if (scannedSNs.length >= MAX_ITEMS) return;
+
+  scannedSNs.push(sn);
+
+  // Haptic feedback
+  if (navigator.vibrate) navigator.vibrate(100);
+  playBeep();
+
+  renderScanList();
+
+  // Stop scanner when 5 reached
+  if (scannedSNs.length >= MAX_ITEMS) {
+    try { html5QrCode.stop(); } catch (e) {}
+  }
+}
+
+function removeSN(index) {
+  scannedSNs.splice(index, 1);
+  renderScanList();
+  // Restart scanner if we dropped below 5
+  if (scannedSNs.length < MAX_ITEMS && html5QrCode) {
+    try {
+      html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+        onScanSuccess,
+        function() {}
+      ).catch(function() {});
+    } catch (e) {}
+  }
+}
+
+function renderScanList() {
+  var list = document.getElementById('scan-list');
+  var html = '';
+  for (var i = 0; i < MAX_ITEMS; i++) {
+    if (i < scannedSNs.length) {
+      html += '<li class="scan-item">' +
+        '<span class="icon check">&#10003;</span>' +
+        '<span class="sn">' + scannedSNs[i] + '</span>' +
+        '<button class="remove" onclick="removeSN(' + i + ')" title="Entfernen">&times;</button>' +
+        '</li>';
+    } else {
+      html += '<li class="scan-item empty">' +
+        '<span class="icon">&#9675;</span>' +
+        '<span class="sn">...</span>' +
+        '</li>';
+    }
+  }
+  list.innerHTML = html;
+  document.getElementById('count').textContent = scannedSNs.length;
+  document.getElementById('btn-create').disabled = scannedSNs.length < MAX_ITEMS;
+}
+
+function createBatch() {
+  if (scannedSNs.length < MAX_ITEMS) return;
+  try { html5QrCode.stop(); } catch (e) {}
+  window.location.hash = scannedSNs.join(',');
+  showBatchView(scannedSNs.slice());
+}
+
+// ─── BATCH VIEW ───
+function showBatchView(sns) {
+  document.getElementById('scanner-view').classList.add('hidden');
+  document.getElementById('scanner-footer').classList.add('hidden');
+  document.getElementById('batch-view').classList.remove('hidden');
+
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('batch-meta').textContent =
+    sns.length + ' Elemente | Erstellt: ' + today;
+
+  // Fetch DPP.json
+  fetch(DPP_JSON_URL)
+    .then(function(r) { return r.json(); })
+    .then(function(data) { renderBatch(sns, data); })
+    .catch(function() { renderBatch(sns, null); });
+}
+
+function renderBatch(sns, dppData) {
+  var elements = [];
+  var missing = [];
+
+  sns.forEach(function(sn) {
+    var found = null;
+    if (dppData) {
+      for (var i = 0; i < dppData.length; i++) {
+        if (dppData[i].Serial === sn) { found = dppData[i]; break; }
+      }
+    }
+    if (found) {
+      elements.push(found);
+    } else {
+      missing.push(sn);
+    }
+  });
+
+  // Warning
+  var wb = document.getElementById('warning-box');
+  if (!dppData) {
+    wb.classList.remove('hidden');
+    wb.textContent = 'DPP.json konnte nicht geladen werden. Daten nicht verfuegbar.';
+  } else if (missing.length > 0) {
+    wb.classList.remove('hidden');
+    wb.textContent = 'Keine Daten gefunden fuer: ' + missing.join(', ');
+  } else {
+    wb.classList.add('hidden');
+  }
+
+  // Summary
+  var sg = document.getElementById('summary-grid');
+  if (elements.length > 0) {
+    var avgTemp = 0, avgHum = 0, avgDur = 0;
+    elements.forEach(function(el) {
+      avgTemp += el.Temperatur;
+      avgHum += el.Feuchtigkeit;
+      avgDur += el.Dauer;
+    });
+    var n = elements.length;
+    sg.innerHTML =
+      '<div class="summary-item"><div class="val">' + (avgTemp / n).toFixed(1) + '&deg;C</div><div class="label">&Oslash; Temperatur</div></div>' +
+      '<div class="summary-item"><div class="val">' + (avgHum / n).toFixed(1) + '%</div><div class="label">&Oslash; Feuchtigkeit</div></div>' +
+      '<div class="summary-item"><div class="val">' + (avgDur / n).toFixed(1) + 's</div><div class="label">&Oslash; Dauer</div></div>';
+    document.getElementById('summary-card').classList.remove('hidden');
+  } else {
+    document.getElementById('summary-card').classList.add('hidden');
+  }
+
+  // Element cards
+  var container = document.getElementById('elements-container');
+  var html = '';
+
+  sns.forEach(function(sn, idx) {
+    var el = null;
+    for (var i = 0; i < elements.length; i++) {
+      if (elements[i].Serial === sn) { el = elements[i]; break; }
+    }
+
+    html += '<div class="element-card">';
+    html += '<div class="sn-head">Element ' + (idx + 1) + ' &ndash; ' + sn + '</div>';
+    if (el) {
+      html += '<div class="data-row">' + el.Temperatur + '&deg;C &ensp;|&ensp; ' +
+        el.Feuchtigkeit + '% &ensp;|&ensp; ' + el.Dauer + 's</div>';
+      html += '<div class="data-row">' + el.Datum + '</div>';
+      var link = el.uri || ('https://DPPIP.github.io/DPP-EUROTUBE/01/' + el.GTIN + '/10/' + el.Batch + '/21/' + sn + '/');
+      html += '<a class="link" href="' + link + '" target="_blank">&rarr; Einzel-DPP &ouml;ffnen</a>';
+    } else {
+      html += '<div class="data-row">Keine Daten verf&uuml;gbar</div>';
+    }
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function copyLink() {
+  var url = window.location.href;
+  navigator.clipboard.writeText(url).then(function() {
+    var c = document.getElementById('copied-check');
+    c.classList.add('show');
+    setTimeout(function() { c.classList.remove('show'); }, 1500);
+  }).catch(function() {
+    showToast('Kopieren fehlgeschlagen');
+  });
+}
+
+function goToScanner() {
+  window.location.hash = '';
+  showScannerView();
+}
+
+// Listen for hash changes
+window.addEventListener('hashchange', function() {
+  var hash = window.location.hash.replace('#', '');
+  if (hash && hash.startsWith('SN-')) {
+    showBatchView(hash.split(','));
+  }
+});
+
+// Start
+init();
+</script>
+</body>
+</html>
