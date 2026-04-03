@@ -359,13 +359,12 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     with open(ARCHIV_JSON, "w", encoding="utf-8") as f:
         json.dump(archiv, f, indent=4, ensure_ascii=False)
 
-    # 2) GS1-Pfad anlegen: 01/{gtin}/10/{batch}/21/{sn}/
-    gs1_dir = os.path.join("01", GTIN, "10", batch, "21", sn)
-    os.makedirs(gs1_dir, exist_ok=True)
+    # 2) Passport-Ordner anlegen
+    os.makedirs(PASSPORT_DIR, exist_ok=True)
 
-    # 3) JSON-LD schreiben (im GS1-Pfad neben index.html)
+    # 3) JSON-LD schreiben (in passports/)
     jsonld       = erstelle_jsonld(eintrag)
-    jsonld_datei = os.path.join(gs1_dir, f"{sn}.jsonld")
+    jsonld_datei = os.path.join(PASSPORT_DIR, f"{sn}.jsonld")
     with open(jsonld_datei, "w", encoding="utf-8") as f:
         json.dump(jsonld, f, indent=2, ensure_ascii=False)
 
@@ -373,17 +372,25 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     qr_url = uri.replace(W3ID_BASE, GITHUB_PAGES)  # Fallback bis W3ID-Fix gemergt
     qr_b64 = erstelle_qr_b64(qr_url)
 
-    # 5) HTML als index.html unter GS1-Pfad → URI funktioniert direkt
-    html_datei = os.path.join(gs1_dir, "index.html")
+    # 5) HTML schreiben (in passports/)
+    html_datei = os.path.join(PASSPORT_DIR, f"{sn}.html")
     with open(html_datei, "w", encoding="utf-8") as f:
         f.write(erstelle_html(eintrag, jsonld, qr_b64))
 
+    # 6) GS1-Pfad mit Redirect → URI funktioniert auf GitHub Pages
+    gs1_dir = os.path.join("01", GTIN, "10", batch, "21", sn)
+    os.makedirs(gs1_dir, exist_ok=True)
+    redirect_html = f'<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/{PASSPORT_DIR}/{sn}.html"></head></html>'
+    redirect_datei = os.path.join(gs1_dir, "index.html")
+    with open(redirect_datei, "w", encoding="utf-8") as f:
+        f.write(redirect_html)
+
     print(f"  [OK] {sn} | {dauer}s | {t_med}°C | {h_med}%")
     print(f"  [OK] URI: {uri}")
-    print(f"  [OK] Dateien: {gs1_dir}/index.html + {sn}.jsonld")
+    print(f"  [OK] Dateien: {PASSPORT_DIR}/{sn}.html + {sn}.jsonld")
 
-    # 6) GitHub Push
-    github_push(sn, [jsonld_datei, html_datei, ARCHIV_JSON])
+    # 7) GitHub Push
+    github_push(sn, [jsonld_datei, html_datei, redirect_datei, ARCHIV_JSON])
 
     return sn, uri
 
