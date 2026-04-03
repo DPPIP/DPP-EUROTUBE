@@ -47,7 +47,8 @@ LAND        = "CH"
 
 def oeffne_dpp(uri: str):
     """Öffnet w3id.org URI – fällt auf GitHub Pages zurück wenn nicht erreichbar."""
-    github_url = uri.replace(W3ID_BASE, GITHUB_PAGES)
+    sn = uri.split("/")[-1]
+    github_url = f"{GITHUB_PAGES}/{PASSPORT_DIR}/{sn}.html"
     def _open():
         try:
             urllib.request.urlopen(urllib.request.Request(uri, method="HEAD"), timeout=3)
@@ -58,8 +59,8 @@ def oeffne_dpp(uri: str):
 
 
 def gs1_uri(gtin: str, batch: str, serial_nr: str) -> str:
-    """Erzeugt eine GS1 Digital Link URI gemäss Standard v1.6."""
-    return f"{W3ID_BASE}/01/{gtin}/10/{batch}/21/{serial_nr}"
+    """Erzeugt eine W3ID URI für den DPP."""
+    return f"{W3ID_BASE}/{serial_nr}"
 
 
 def serial_nummer(timestamp: int) -> str:
