@@ -377,20 +377,12 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     with open(html_datei, "w", encoding="utf-8") as f:
         f.write(erstelle_html(eintrag, jsonld, qr_b64))
 
-    # 6) GS1-Pfad mit Redirect → URI funktioniert auf GitHub Pages
-    gs1_dir = os.path.join("01", GTIN, "10", batch, "21", sn)
-    os.makedirs(gs1_dir, exist_ok=True)
-    redirect_html = f'<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/{PASSPORT_DIR}/{sn}.html"></head></html>'
-    redirect_datei = os.path.join(gs1_dir, "index.html")
-    with open(redirect_datei, "w", encoding="utf-8") as f:
-        f.write(redirect_html)
-
     print(f"  [OK] {sn} | {dauer}s | {t_med}°C | {h_med}%")
     print(f"  [OK] URI: {uri}")
     print(f"  [OK] Dateien: {PASSPORT_DIR}/{sn}.html + {sn}.jsonld")
 
-    # 7) GitHub Push
-    github_push(sn, [jsonld_datei, html_datei, redirect_datei, ARCHIV_JSON])
+    # 6) GitHub Push
+    github_push(sn, [jsonld_datei, html_datei, ARCHIV_JSON])
 
     return sn, uri
 
