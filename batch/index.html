@@ -166,7 +166,7 @@
 
 <script>
 const MAX_ITEMS = 5;
-const DPP_JSON_URL = 'https://DPPIP.github.io/DPP-EUROTUBE/DPP.json';
+const PASSPORT_BASE = 'https://DPPIP.github.io/DPP-EUROTUBE/passports/';
 const SN_REGEX = /SN-\d+/;
 
 let scannedSNs = [];
@@ -321,53 +321,55 @@ function showBatchView(sns) {
   document.getElementById('batch-meta').textContent =
     sns.length + ' Elemente | Erstellt: ' + today;
 
-  // Fetch DPP.json
-  fetch(DPP_JSON_URL)
-    .then(function(r) { return r.json(); })
-    .then(function(data) { renderBatch(sns, data); })
-    .catch(function() { renderBatch(sns, null); });
+  // Fetch individual .jsonld files in parallel
+  var fetches = sns.map(function(sn) {
+    return fetch(PASSPORT_BASE + sn + '.jsonld')
+      .then(function(r) { return r.json(); })
+      .then(function(jld) {
+        var pdata = jld['espr:productionData'] || {};
+        return {
+          Serial:      sn,
+          Datum:       jld['productionDate'] || '',
+          Temperatur:  (pdata['espr:averageTemperature'] || {})['@value'] || null,
+          Feuchtigkeit:(pdata['espr:averageHumidity']    || {})['@value'] || null,
+          Dauer:       (pdata['espr:curingDuration']     || {})['@value'] || null,
+          uri:         jld['@id'] || (PASSPORT_BASE + sn + '.html')
+        };
+      })
+      .catch(function() { return { Serial: sn, error: true }; });
+  });
+
+  Promise.all(fetches).then(function(results) { renderBatch(sns, results); });
 }
 
-function renderBatch(sns, dppData) {
+function renderBatch(sns, results) {
   var elements = [];
   var missing = [];
 
-  sns.forEach(function(sn) {
-    var found = null;
-    if (dppData) {
-      for (var i = 0; i < dppData.length; i++) {
-        if (dppData[i].Serial === sn) { found = dppData[i]; break; }
-      }
-    }
-    if (found) {
-      elements.push(found);
-    } else {
-      missing.push(sn);
-    }
+  results.forEach(function(r) {
+    if (r.error) { missing.push(r.Serial); } else { elements.push(r); }
   });
 
   // Warning
   var wb = document.getElementById('warning-box');
-  if (!dppData) {
+  if (missing.length > 0) {
     wb.classList.remove('hidden');
-    wb.textContent = 'DPP.json konnte nicht geladen werden. Daten nicht verfuegbar.';
-  } else if (missing.length > 0) {
-    wb.classList.remove('hidden');
-    wb.textContent = 'Keine Daten gefunden fuer: ' + missing.join(', ');
+    wb.textContent = 'Passport nicht gefunden fuer: ' + missing.join(', ');
   } else {
     wb.classList.add('hidden');
   }
 
   // Summary
   var sg = document.getElementById('summary-grid');
-  if (elements.length > 0) {
+  var valid = elements.filter(function(e) { return e.Temperatur !== null; });
+  if (valid.length > 0) {
     var avgTemp = 0, avgHum = 0, avgDur = 0;
-    elements.forEach(function(el) {
-      avgTemp += el.Temperatur;
-      avgHum += el.Feuchtigkeit;
-      avgDur += el.Dauer;
+    valid.forEach(function(el) {
+      avgTemp += parseFloat(el.Temperatur);
+      avgHum  += parseFloat(el.Feuchtigkeit);
+      avgDur  += parseFloat(el.Dauer);
     });
-    var n = elements.length;
+    var n = valid.length;
     sg.innerHTML =
       '<div class="summary-item"><div class="val">' + (avgTemp / n).toFixed(1) + '&deg;C</div><div class="label">&Oslash; Temperatur</div></div>' +
       '<div class="summary-item"><div class="val">' + (avgHum / n).toFixed(1) + '%</div><div class="label">&Oslash; Feuchtigkeit</div></div>' +
@@ -381,22 +383,16 @@ function renderBatch(sns, dppData) {
   var container = document.getElementById('elements-container');
   var html = '';
 
-  sns.forEach(function(sn, idx) {
-    var el = null;
-    for (var i = 0; i < elements.length; i++) {
-      if (elements[i].Serial === sn) { el = elements[i]; break; }
-    }
-
+  results.forEach(function(el, idx) {
     html += '<div class="element-card">';
-    html += '<div class="sn-head">Element ' + (idx + 1) + ' &ndash; ' + sn + '</div>';
-    if (el) {
+    html += '<div class="sn-head">Element ' + (idx + 1) + ' &ndash; ' + el.Serial + '</div>';
+    if (!el.error) {
       html += '<div class="data-row">' + el.Temperatur + '&deg;C &ensp;|&ensp; ' +
         el.Feuchtigkeit + '% &ensp;|&ensp; ' + el.Dauer + 's</div>';
       html += '<div class="data-row">' + el.Datum + '</div>';
-      var link = el.uri || ('https://DPPIP.github.io/DPP-EUROTUBE/01/' + el.GTIN + '/10/' + el.Batch + '/21/' + sn + '/');
-      html += '<a class="link" href="' + link + '" target="_blank">&rarr; Einzel-DPP &ouml;ffnen</a>';
+      html += '<a class="link" href="' + el.uri + '" target="_blank">&rarr; Einzel-DPP &ouml;ffnen</a>';
     } else {
-      html += '<div class="data-row">Keine Daten verf&uuml;gbar</div>';
+      html += '<div class="data-row">Kein Passport gefunden</div>';
     }
     html += '</div>';
   });

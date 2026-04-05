@@ -13,6 +13,7 @@ import serial
 import json
 import time
 import os
+import glob
 import datetime
 import base64
 import subprocess
@@ -26,7 +27,6 @@ from io import BytesIO
 
 PORT        = "COM7"            # Serieller Port (Windows: COM7, Linux: /dev/ttyUSB0)
 BAUD        = 9600
-ARCHIV_JSON = "DPP.json"        # Lokales Archiv aller Einträge (im Repo-Root)
 
 # GS1-Struktur (Prototyp: Präfix 9999 = reserviert für Tests)
 GTIN        = "9999000000001"   # 13-stellige Test-GTIN eures Produkts
@@ -312,7 +312,6 @@ def github_push(serial_nr: str, dateien: list[str]):
     try:
         for pfad in dateien:
             # Unterordner-Struktur beibehalten (z.B. passports/SN-xxx.html)
-            # ARCHIV_JSON liegt im Root → kein Unterordner
             ziel = os.path.join(GITHUB_REPO, pfad)
             os.makedirs(os.path.dirname(ziel) or GITHUB_REPO, exist_ok=True)
             with open(pfad, "rb") as f:
@@ -354,13 +353,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
         "uri":          uri
     }
 
-    # 1) Lokales JSON-Archiv aktualisieren (bleibt im Root)
-    archiv = json.load(open(ARCHIV_JSON)) if os.path.exists(ARCHIV_JSON) else []
-    archiv.append(eintrag)
-    with open(ARCHIV_JSON, "w", encoding="utf-8") as f:
-        json.dump(archiv, f, indent=4, ensure_ascii=False)
-
-    # 2) Passport-Ordner anlegen
+    # 1) Passport-Ordner anlegen
     os.makedirs(PASSPORT_DIR, exist_ok=True)
 
     # 3) JSON-LD schreiben (in passports/)
@@ -383,7 +376,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     print(f"  [OK] Dateien: {PASSPORT_DIR}/{sn}.html + {sn}.jsonld")
 
     # 6) GitHub Push
-    github_push(sn, [jsonld_datei, html_datei, ARCHIV_JSON])
+    github_push(sn, [jsonld_datei, html_datei])
 
     return sn, uri
 
@@ -521,12 +514,25 @@ listbox.pack(side="left", fill="both", expand=True)
 scrollbar.config(command=listbox.yview)
 
 def lade_liste():
-    """Lädt alle Einträge aus DPP.json in die Listbox."""
+    """Lädt alle Passports aus passports/*.jsonld in die Listbox."""
     listbox.delete(0, "end")
-    if os.path.exists(ARCHIV_JSON):
-        eintraege = json.load(open(ARCHIV_JSON, encoding="utf-8"))
-        for e in reversed(eintraege):
-            listbox.insert("end", f"  {e['Serial']}  |  {e['Datum']}  |  {e['Temperatur']}°C  |  {e['Feuchtigkeit']}%  |  {e['Dauer']}s")
+    passport_path = os.path.join(GITHUB_REPO, PASSPORT_DIR)
+    if not os.path.isdir(passport_path):
+        return
+    dateien = sorted(glob.glob(os.path.join(passport_path, "*.jsonld")), reverse=True)
+    for datei in dateien:
+        try:
+            with open(datei, encoding="utf-8") as f:
+                jld = json.load(f)
+            sn    = jld.get("gs1:serialNumber", os.path.basename(datei).replace(".jsonld", ""))
+            datum = jld.get("productionDate", "")
+            pdata = jld.get("espr:productionData", {})
+            temp  = pdata.get("espr:averageTemperature", {}).get("@value", "")
+            hum   = pdata.get("espr:averageHumidity",    {}).get("@value", "")
+            dauer = pdata.get("espr:curingDuration",     {}).get("@value", "")
+            listbox.insert("end", f"  {sn}  |  {datum}  |  {temp}°C  |  {hum}%  |  {dauer}s")
+        except Exception:
+            pass
 
 def zeige_link(event):
     """Zeigt den Link des ausgewählten Eintrags im Link-Label an."""
@@ -534,25 +540,14 @@ def zeige_link(event):
     if not sel:
         return
     sn = listbox.get(sel[0]).strip().split("|")[0].strip()
-    if os.path.exists(ARCHIV_JSON):
-        eintraege = json.load(open(ARCHIV_JSON, encoding="utf-8"))
-        for e in eintraege:
-            if e["Serial"] == sn:
-                liste_link_label.config(text=e["uri"], fg="#2D5A3D")
-                return
+    liste_link_label.config(text=f"{W3ID_BASE}/{sn}", fg="#2D5A3D")
 
 def oeffne_ausgewaehlt(event):
     sel = listbox.curselection()
     if not sel:
         return
-    text = listbox.get(sel[0])
-    sn = text.strip().split("|")[0].strip()
-    if os.path.exists(ARCHIV_JSON):
-        eintraege = json.load(open(ARCHIV_JSON, encoding="utf-8"))
-        for e in eintraege:
-            if e["Serial"] == sn:
-                oeffne_dpp(e["uri"])
-                return
+    sn = listbox.get(sel[0]).strip().split("|")[0].strip()
+    oeffne_dpp(f"{W3ID_BASE}/{sn}")
 
 listbox.bind("<<ListboxSelect>>", zeige_link)
 listbox.bind("<Double-Button-1>", oeffne_ausgewaehlt)
