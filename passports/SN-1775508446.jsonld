@@ -9,21 +9,26 @@
     "dpp:DigitalProductPassport",
     "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1/class/HyperloopSegment"
   ],
-  "@id": "https://w3id.org/hyperloop-dpp/SN-1775506519",
+  "@id": "https://w3id.org/hyperloop-dpp/SN-1775508446",
   "dpp:status": "active",
-  "dcterms:created": "2026-04-06T22:15:07",
-  "dcterms:modified": "2026-04-06T22:15:07",
-  "bsdd:SegmentID": "SN-1775506519",
+  "dcterms:created": "2026-04-06T22:47:26",
+  "dcterms:modified": "2026-04-06T22:47:26",
+  "dcterms:creator": "Eurotube – FHNW",
+  "dpp:wasDerivedFrom": {
+    "dpp:attributedTo": "Arduino Sensor – Digital Twin SMF",
+    "dpp:method": "Automatisiert via Serial-Kommunikation (USB, 9600 Baud)"
+  },
+  "bsdd:SegmentID": "SN-1775508446",
   "bsdd:Herstellungsdatum": {
-    "@value": "2026-04-06T22:15:07",
+    "@value": "2026-04-06T22:47:26",
     "@type": "xsd:dateTime"
   },
   "bsdd:DauerInSchalung": {
-    "@value": "21.3",
+    "@value": "18.5",
     "@type": "xsd:decimal"
   },
   "bsdd:AussentemperaturSchalung": {
-    "@value": "23.4",
+    "@value": "21.3",
     "@type": "xsd:decimal"
   },
   "bsdd:Materialzusammensetzung": "Beton C40/50, Bewehrungsstahl B500B",
