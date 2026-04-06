@@ -11,11 +11,11 @@
     "Product",
     "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1/class/HyperloopSegment"
   ],
-  "@id": "https://w3id.org/hyperloop-dpp/SN-1775502251",
+  "@id": "https://w3id.org/hyperloop-dpp/SN-1775502461",
   "gs1:gtin": "9999000000001",
   "gs1:batchLotNumber": "LOT-2026-15",
-  "gs1:serialNumber": "SN-1775502251",
-  "gs1:digitalLink": "https://w3id.org/hyperloop-dpp/SN-1775502251",
+  "gs1:serialNumber": "SN-1775502461",
+  "gs1:digitalLink": "https://w3id.org/hyperloop-dpp/SN-1775502461",
   "name": "Beton-Fertigelement Typ A",
   "description": "Beton-Fertigelement, hergestellt im Hyperloop-Schalungsprozess.",
   "manufacturer": {
@@ -26,18 +26,18 @@
       "addressCountry": "CH"
     }
   },
-  "bsdd:SegmentID": "SN-1775502251",
+  "bsdd:SegmentID": "SN-1775502461",
   "bsdd:Herstellungsdatum": {
-    "@value": "2026-04-06T21:04:07",
+    "@value": "2026-04-06T21:07:33",
     "@type": "xsd:dateTime"
   },
   "bsdd:DauerInSchalung": {
-    "@value": "22.1",
+    "@value": "19.8",
     "@type": "xsd:decimal",
     "qudt:unit": "qudt:MIN"
   },
   "bsdd:AussentemperaturSchalung": {
-    "@value": "22.7",
+    "@value": "20.1",
     "@type": "xsd:decimal",
     "qudt:unit": "qudt:DEG_C"
   },
@@ -58,6 +58,6 @@
     "espr:applicability": "Delegierter Akt Bauprodukte - erwartet 2029",
     "espr:status": "Prototyp / Forschung",
     "espr:issuedBy": "Eurotube - FHNW",
-    "espr:issueDate": "2026-04-06T21:04:07"
+    "espr:issueDate": "2026-04-06T21:07:33"
   }
 }
