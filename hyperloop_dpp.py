@@ -63,8 +63,8 @@ def oeffne_dpp(uri: str):
 
 
 def gs1_uri(gtin: str, batch: str, serial_nr: str) -> str:
-    """Erzeugt eine W3ID URI für den DPP."""
-    return f"{W3ID_BASE}/{serial_nr}"
+    """Erzeugt eine GS1 Digital Link URI für den DPP."""
+    return f"{W3ID_BASE}/01/{gtin}/10/{batch}/21/{serial_nr}"
 
 
 def serial_nummer(timestamp: int) -> str:
@@ -102,6 +102,13 @@ def erstelle_jsonld(eintrag: dict) -> dict:
         "dpp:status":       "active",
         "dcterms:created":  eintrag["Datum"],
         "dcterms:modified": eintrag["Datum"],
+        "dcterms:creator":  HERSTELLER,
+
+        # ── Provenance ───────────────────────────────────────────────────────
+        "dpp:wasDerivedFrom": {
+            "dpp:attributedTo": "Arduino Sensor – Digital Twin SMF",
+            "dpp:method":       "Automatisiert via Serial-Kommunikation (USB, 9600 Baud)"
+        },
 
         # ── bSDD Tabelle 1: Segment-Parameter ───────────────────────────────
         "bsdd:SegmentID": eintrag["Serial"],
@@ -332,7 +339,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
         json.dump(jsonld, f, indent=2, ensure_ascii=False)
 
     # 4) QR Code zeigt auf GS1/W3ID-URI
-    qr_url = f"{GITHUB_PAGES}/{PASSPORT_DIR}/{sn}.html"
+    qr_url = uri  # W3ID URI – redirect zu HTML (merged PR #5843)
     qr_b64 = erstelle_qr_b64(qr_url)
 
     # 5) HTML schreiben (in passports/)
@@ -508,14 +515,27 @@ def zeige_link(event):
     if not sel:
         return
     sn = listbox.get(sel[0]).strip().split("|")[0].strip()
-    liste_link_label.config(text=f"{W3ID_BASE}/{sn}", fg="#2D5A3D")
+    # URI aus JSON-LD lesen
+    pfad = os.path.join(GITHUB_REPO, PASSPORT_DIR, f"{sn}.jsonld")
+    try:
+        with open(pfad, encoding="utf-8") as f:
+            uri = json.load(f).get("@id", f"{W3ID_BASE}/{sn}")
+    except Exception:
+        uri = f"{W3ID_BASE}/{sn}"
+    liste_link_label.config(text=uri, fg="#2D5A3D")
 
 def oeffne_ausgewaehlt(event):
     sel = listbox.curselection()
     if not sel:
         return
     sn = listbox.get(sel[0]).strip().split("|")[0].strip()
-    oeffne_dpp(f"{W3ID_BASE}/{sn}")
+    pfad = os.path.join(GITHUB_REPO, PASSPORT_DIR, f"{sn}.jsonld")
+    try:
+        with open(pfad, encoding="utf-8") as f:
+            uri = json.load(f).get("@id", f"{W3ID_BASE}/{sn}")
+    except Exception:
+        uri = f"{W3ID_BASE}/{sn}"
+    oeffne_dpp(uri)
 
 listbox.bind("<<ListboxSelect>>", zeige_link)
 listbox.bind("<Double-Button-1>", oeffne_ausgewaehlt)
