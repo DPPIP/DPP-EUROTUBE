@@ -41,6 +41,10 @@ PASSPORT_DIR = "passports"
 HERSTELLER  = "Eurotube – FHNW"
 PRODUKT     = "Beton-Fertigelement Typ A"
 LAND        = "CH"
+MATERIAL    = "Beton C40/50, Bewehrungsstahl B500B"
+
+# bSDD Dictionary (buildingSMART Data Dictionary)
+BSDD_BASE   = "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1"
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -79,74 +83,67 @@ def batch_nummer() -> str:
 def erstelle_jsonld(eintrag: dict) -> dict:
     """
     Erzeugt einen EU-DPP-konformen JSON-LD Eintrag.
-    Basiert auf: GS1 Web Vocabulary + Schema.org + ESPR-Vocab (Entwurf).
+    Basiert auf: GS1 Web Vocabulary + Schema.org + bSDD (HYPER-DPP/0.1).
     """
     uri = eintrag["uri"]
     return {
         "@context": {
-            "@vocab":  "https://schema.org/",
-            "gs1":     "https://www.gs1.org/voc/",
-            "espr":    "https://espr.ec.europa.eu/vocab/",
-            "xsd":     "http://www.w3.org/2001/XMLSchema#",
-            "qudt":    "http://qudt.org/schema/qudt/"
+            "@vocab": "https://schema.org/",
+            "gs1":    "https://www.gs1.org/voc/",
+            "xsd":    "http://www.w3.org/2001/XMLSchema#",
+            "qudt":   "http://qudt.org/schema/qudt/",
+            "bsdd":   f"{BSDD_BASE}/prop/"
         },
-        "@type": "Product",
+        "@type": ["Product", f"{BSDD_BASE}/class/HyperloopSegment"],
         "@id":   uri,
 
         # ── Identifikation ──────────────────────────────────────────────────
-        "gs1:gtin":          eintrag["GTIN"],
+        "gs1:gtin":           eintrag["GTIN"],
         "gs1:batchLotNumber": eintrag["Batch"],
-        "gs1:serialNumber":  eintrag["Serial"],
-        "gs1:digitalLink":   uri,
+        "gs1:serialNumber":   eintrag["Serial"],
+        "gs1:digitalLink":    uri,
 
         # ── Produkt ─────────────────────────────────────────────────────────
-        "name":              PRODUKT,
-        "description":       "Beton-Fertigelement, hergestellt im Hyperloop-Schalungsprozess.",
-        "productionDate":    eintrag["Datum"],
+        "name":        PRODUKT,
+        "description": "Beton-Fertigelement, hergestellt im Hyperloop-Schalungsprozess.",
 
         "manufacturer": {
             "@type":   "Organization",
             "name":    HERSTELLER,
-            "address": {
-                "@type":          "PostalAddress",
-                "addressCountry": LAND
-            }
+            "address": {"@type": "PostalAddress", "addressCountry": LAND}
         },
 
-        # ── Produktionsdaten (Messwerte) ─────────────────────────────────────
-        "espr:productionData": {
-            "espr:averageTemperature": {
-                "@value":   eintrag["Temperatur"],
-                "@type":    "xsd:decimal",
-                "qudt:unit": "qudt:DEG_C"
-            },
-            "espr:averageHumidity": {
-                "@value":   eintrag["Feuchtigkeit"],
-                "@type":    "xsd:decimal",
-                "qudt:unit": "qudt:PERCENT"
-            },
-            "espr:curingDuration": {
-                "@value":   eintrag["Dauer"],
-                "@type":    "xsd:decimal",
-                "qudt:unit": "qudt:SEC"
-            }
+        # ── bSDD Tabelle 1: Segment-Parameter ───────────────────────────────
+        "bsdd:SegmentID":    eintrag["Serial"],
+
+        "bsdd:Herstellungsdatum": {
+            "@value": eintrag["Datum"],
+            "@type":  "xsd:dateTime"
         },
 
-        # ── Nachhaltigkeitsdaten (ESPR Pflichtfelder, Entwurf) ───────────────
-        "espr:sustainabilityData": {
-            "espr:recyclabilityStatement": "Beton 100% recycelbar gemäss SIA 262",
-            "espr:substancesOfConcern":    "keine",
-            "espr:carbonFootprint":        "Angabe ausstehend"
+        "bsdd:DauerInSchalung": {
+            "@value":    str(eintrag["Dauer"]),
+            "@type":     "xsd:decimal",
+            "qudt:unit": "qudt:MIN"
         },
 
-        # ── Konformität ──────────────────────────────────────────────────────
-        "espr:complianceDeclaration": {
-            "espr:regulation":    "EU 2024/1781 (ESPR)",
-            "espr:applicability": "Delegierter Akt Bauprodukte – erwartet 2029",
-            "espr:status":        "Prototyp / Forschung",
-            "espr:issuedBy":      HERSTELLER,
-            "espr:issueDate":     eintrag["Datum"]
-        }
+        "bsdd:AussentemperaturSchalung": {
+            "@value":    str(eintrag["Temperatur"]),
+            "@type":     "xsd:decimal",
+            "qudt:unit": "qudt:DEG_C"
+        },
+
+        "bsdd:Materialzusammensetzung": MATERIAL,
+
+        "bsdd:SegmentStatus": "Produced",
+
+        # ── bSDD Tabelle 2: Batch-Parameter (initial leer, update bei Montage)
+        "bsdd:BatchID":            eintrag["Batch"],
+        "bsdd:Verbindungsdatum":   None,
+        "bsdd:VerlinkungBauteile": [],
+        "bsdd:BatchStatus":        None,
+        "bsdd:Einbaudatum":        None,
+
     }
 
 
@@ -200,8 +197,7 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
     margin-top:8px;word-break:break-all;line-height:1.5}}
   .footer{{text-align:center;font-size:11px;color:var(--muted);
     margin-top:2rem;font-family:var(--mono)}}
-  .espr-note{{background:var(--accent-light);border:1px solid #b2d4bc;
-    border-radius:8px;padding:.75rem 1rem;font-size:12px;color:#2D5A3D;margin-bottom:1rem}}
+
 </style>
 </head>
 <body>
@@ -209,11 +205,6 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
   <span class="badge">Digital Product Passport</span>
   <h1>{PRODUKT}</h1>
   <p class="sub">{eintrag['Datum']} &nbsp;·&nbsp; {eintrag['Serial']}</p>
-
-  <div class="espr-note">
-    Dieser DPP entspricht der Struktur von Reg. (EU) 2024/1781 (ESPR) –
-    Delegierter Akt Bauprodukte erwartet 2029. Prototyp / Forschung.
-  </div>
 
   <div class="card">
     <p class="card-label">Produktionsdaten</p>
@@ -245,16 +236,6 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
       <span class="val-mono">{HERSTELLER}</span></div>
     <div class="row"><span class="dot"></span><span class="key">Status</span>
       <span class="val-mono" style="color:var(--accent)">ARCHIVIERT</span></div>
-  </div>
-
-  <div class="card">
-    <p class="card-label">Nachhaltigkeit</p>
-    <div class="row"><span class="dot"></span><span class="key">Recyclingfähigkeit</span>
-      <span class="val-mono">100% (SIA 262)</span></div>
-    <div class="row"><span class="dot"></span><span class="key">Schadstoffe</span>
-      <span class="val-mono">keine</span></div>
-    <div class="row"><span class="dot"></span><span class="key">Carbon Footprint</span>
-      <span class="val-mono">Angabe ausstehend</span></div>
   </div>
 
   <div class="card">
@@ -525,12 +506,11 @@ def lade_liste():
             with open(datei, encoding="utf-8") as f:
                 jld = json.load(f)
             sn    = jld.get("gs1:serialNumber", os.path.basename(datei).replace(".jsonld", ""))
-            datum = jld.get("productionDate", "")
-            pdata = jld.get("espr:productionData", {})
-            temp  = pdata.get("espr:averageTemperature", {}).get("@value", "")
-            hum   = pdata.get("espr:averageHumidity",    {}).get("@value", "")
-            dauer = pdata.get("espr:curingDuration",     {}).get("@value", "")
-            listbox.insert("end", f"  {sn}  |  {datum}  |  {temp}°C  |  {hum}%  |  {dauer}s")
+            datum = (jld.get("bsdd:Herstellungsdatum") or {}).get("@value", jld.get("productionDate", ""))
+            temp  = (jld.get("bsdd:AussentemperaturSchalung") or {}).get("@value", "")
+            dauer = (jld.get("bsdd:DauerInSchalung") or {}).get("@value", "")
+            status = jld.get("bsdd:SegmentStatus", "")
+            listbox.insert("end", f"  {sn}  |  {datum}  |  {temp}°C  |  {dauer}min  |  {status}")
         except Exception:
             pass
 
