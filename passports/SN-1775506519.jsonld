@@ -1,0 +1,36 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "bsdd": "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1/prop/",
+    "dpp": "https://w3id.org/dpp#",
+    "dcterms": "http://purl.org/dc/terms/"
+  },
+  "@type": [
+    "dpp:DigitalProductPassport",
+    "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1/class/HyperloopSegment"
+  ],
+  "@id": "https://w3id.org/hyperloop-dpp/SN-1775506519",
+  "dpp:status": "active",
+  "dcterms:created": "2026-04-06T22:15:07",
+  "dcterms:modified": "2026-04-06T22:15:07",
+  "bsdd:SegmentID": "SN-1775506519",
+  "bsdd:Herstellungsdatum": {
+    "@value": "2026-04-06T22:15:07",
+    "@type": "xsd:dateTime"
+  },
+  "bsdd:DauerInSchalung": {
+    "@value": "21.3",
+    "@type": "xsd:decimal"
+  },
+  "bsdd:AussentemperaturSchalung": {
+    "@value": "23.4",
+    "@type": "xsd:decimal"
+  },
+  "bsdd:Materialzusammensetzung": "Beton C40/50, Bewehrungsstahl B500B",
+  "bsdd:SegmentStatus": "Produced",
+  "bsdd:BatchID": "LOT-2026-15",
+  "bsdd:Verbindungsdatum": null,
+  "bsdd:VerlinkungBauteile": [],
+  "bsdd:BatchStatus": null,
+  "bsdd:Einbaudatum": null
+}
