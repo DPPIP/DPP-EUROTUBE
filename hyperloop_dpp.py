@@ -88,11 +88,27 @@ def erstelle_jsonld(eintrag: dict) -> dict:
     uri = eintrag["uri"]
     return {
         "@context": {
-            "xsd":  "http://www.w3.org/2001/XMLSchema#",
-            "bsdd": f"{BSDD_BASE}/prop/"
+            "xsd":     "http://www.w3.org/2001/XMLSchema#",
+            "bsdd":    f"{BSDD_BASE}/prop/",
+            "dpp":     "https://w3id.org/dpp#",
+            "dcterms": "http://purl.org/dc/terms/"
         },
-        "@type": f"{BSDD_BASE}/class/HyperloopSegment",
+        "@type": [
+            "dpp:DigitalProductPassport",
+            f"{BSDD_BASE}/class/HyperloopSegment"
+        ],
         "@id":   uri,
+
+        "dpp:status":      "active",
+        "dpp:granularity": "instance",
+        "dcterms:conformsTo": [
+            "prEN 18219:2025 - Unique Identifiers",
+            "prEN 18220:2025 - Data Carriers",
+            "prEN 18222:2025 - APIs",
+            "prEN 18223:2025 - Interoperability"
+        ],
+        "dcterms:created":  eintrag["Datum"],
+        "dcterms:modified": eintrag["Datum"],
 
         # ── bSDD Tabelle 1: Segment-Parameter ───────────────────────────────
         "bsdd:SegmentID": eintrag["Serial"],
