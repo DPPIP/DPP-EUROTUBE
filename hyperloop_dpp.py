@@ -83,38 +83,19 @@ def batch_nummer() -> str:
 def erstelle_jsonld(eintrag: dict) -> dict:
     """
     Erzeugt einen EU-DPP-konformen JSON-LD Eintrag.
-    Basiert auf: GS1 Web Vocabulary + Schema.org + bSDD (HYPER-DPP/0.1).
+    Basiert auf: bSDD HYPER-DPP/0.1 + XSD.
     """
     uri = eintrag["uri"]
     return {
         "@context": {
-            "@vocab": "https://schema.org/",
-            "gs1":    "https://www.gs1.org/voc/",
-            "xsd":    "http://www.w3.org/2001/XMLSchema#",
-            "qudt":   "http://qudt.org/schema/qudt/",
-            "bsdd":   f"{BSDD_BASE}/prop/"
+            "xsd":  "http://www.w3.org/2001/XMLSchema#",
+            "bsdd": f"{BSDD_BASE}/prop/"
         },
-        "@type": ["Product", f"{BSDD_BASE}/class/HyperloopSegment"],
+        "@type": f"{BSDD_BASE}/class/HyperloopSegment",
         "@id":   uri,
 
-        # ── Identifikation ──────────────────────────────────────────────────
-        "gs1:gtin":           eintrag["GTIN"],
-        "gs1:batchLotNumber": eintrag["Batch"],
-        "gs1:serialNumber":   eintrag["Serial"],
-        "gs1:digitalLink":    uri,
-
-        # ── Produkt ─────────────────────────────────────────────────────────
-        "name":        PRODUKT,
-        "description": "Beton-Fertigelement, hergestellt im Hyperloop-Schalungsprozess.",
-
-        "manufacturer": {
-            "@type":   "Organization",
-            "name":    HERSTELLER,
-            "address": {"@type": "PostalAddress", "addressCountry": LAND}
-        },
-
         # ── bSDD Tabelle 1: Segment-Parameter ───────────────────────────────
-        "bsdd:SegmentID":    eintrag["Serial"],
+        "bsdd:SegmentID": eintrag["Serial"],
 
         "bsdd:Herstellungsdatum": {
             "@value": eintrag["Datum"],
@@ -122,15 +103,13 @@ def erstelle_jsonld(eintrag: dict) -> dict:
         },
 
         "bsdd:DauerInSchalung": {
-            "@value":    str(eintrag["Dauer"]),
-            "@type":     "xsd:decimal",
-            "qudt:unit": "qudt:MIN"
+            "@value": str(eintrag["Dauer"]),
+            "@type":  "xsd:decimal"
         },
 
         "bsdd:AussentemperaturSchalung": {
-            "@value":    str(eintrag["Temperatur"]),
-            "@type":     "xsd:decimal",
-            "qudt:unit": "qudt:DEG_C"
+            "@value": str(eintrag["Temperatur"]),
+            "@type":  "xsd:decimal"
         },
 
         "bsdd:Materialzusammensetzung": MATERIAL,
