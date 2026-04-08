@@ -142,17 +142,46 @@ def erstelle_jsonld(eintrag: dict) -> dict:
     }
 
 
+# ─── Manifest ────────────────────────────────────────────────────────────────
+
+def aktualisiere_manifest(sn: str, batch: str, datum: str):
+    """Fügt einen neuen Passport ins manifest.json ein (oder aktualisiert ihn)."""
+    manifest_pfad = os.path.join(PASSPORT_DIR, "manifest.json")
+    try:
+        with open(manifest_pfad, encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        manifest = []
+
+    # Bestehenden Eintrag entfernen falls vorhanden
+    manifest = [e for e in manifest if e.get("sn") != sn]
+    manifest.append({"sn": sn, "batch": batch, "datum": datum})
+
+    with open(manifest_pfad, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+
 # ─── HTML Generator ──────────────────────────────────────────────────────────
 
 def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
     """Erzeugt eine human-readable DPP-Seite mit eingebettetem QR-Code."""
     uri = eintrag["uri"]
+    batch = eintrag.get("Batch", "")
     return f"""<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DPP – {eintrag['Serial']}</title>
+<script>
+// Redirect to batch view unless ?single=1 is in URL
+(function() {{
+  var batchId = "{batch}";
+  if (batchId && !new URLSearchParams(window.location.search).get('single')) {{
+    window.location.replace('../batch/index.html?batch=' + encodeURIComponent(batchId) + '&from=' + encodeURIComponent(window.location.pathname.split('/').pop()));
+  }}
+}})();
+</script>
 <script type="application/ld+json">
 {json.dumps(jsonld, ensure_ascii=False, indent=2)}
 </script>
@@ -351,8 +380,12 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float):
     print(f"  [OK] URI: {uri}")
     print(f"  [OK] Dateien: {PASSPORT_DIR}/{sn}.html + {sn}.jsonld")
 
-    # 6) GitHub Push
-    github_push(sn, [jsonld_datei, html_datei])
+    # 6) Manifest aktualisieren
+    aktualisiere_manifest(sn, batch, datum)
+    manifest_datei = os.path.join(PASSPORT_DIR, "manifest.json")
+
+    # 7) GitHub Push
+    github_push(sn, [jsonld_datei, html_datei, manifest_datei])
 
     return sn, uri
 

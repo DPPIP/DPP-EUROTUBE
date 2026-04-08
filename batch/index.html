@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Batch Scanner – Digital Product Passport</title>
+<title>Batch – Digital Product Passport</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -16,17 +16,14 @@
     --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif
   }
   body{background:var(--bg);font-family:var(--sans);color:var(--ink);min-height:100vh;padding:0}
+  .wrap{max-width:540px;margin:0 auto;padding:2rem 1rem 3rem}
 
-  .wrap{max-width:520px;margin:0 auto;padding:2rem 1rem 3rem}
-
-  /* Badge & Header */
   .badge{background:var(--accent);color:#fff;font-family:var(--mono);font-size:10px;
     font-weight:500;letter-spacing:.12em;padding:4px 10px;border-radius:4px;
     text-transform:uppercase;display:inline-block}
   h1{font-size:24px;font-weight:300;letter-spacing:-.02em;line-height:1.2;margin:.5rem 0 .25rem}
   .sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:1.5rem}
 
-  /* Cards */
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;
     padding:1.25rem;margin-bottom:1rem}
   .card-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;
@@ -38,12 +35,10 @@
   #reader{width:100%}
   #reader video{border-radius:12px}
 
-  /* Counter */
   .counter{font-family:var(--mono);font-size:14px;color:var(--muted);margin-bottom:1rem;
     text-align:center}
   .counter strong{color:var(--ink)}
 
-  /* Scan list */
   .scan-list{list-style:none;margin-bottom:1.5rem}
   .scan-item{display:flex;align-items:center;gap:.75rem;padding:.65rem .85rem;
     border:1px solid var(--border);border-radius:8px;margin-bottom:.5rem;
@@ -62,56 +57,62 @@
     to{opacity:1;transform:translateY(0)}
   }
 
-  /* Warning toast */
   .toast{position:fixed;top:1rem;left:50%;transform:translateX(-50%);
     background:var(--danger);color:#fff;font-family:var(--mono);font-size:12px;
     padding:8px 16px;border-radius:8px;z-index:999;opacity:0;
     transition:opacity .3s;pointer-events:none}
   .toast.show{opacity:1}
 
-  /* Buttons */
   .btn{display:block;width:100%;padding:.85rem;border:none;border-radius:10px;
     font-family:var(--sans);font-size:15px;font-weight:500;cursor:pointer;
     text-align:center;transition:all .2s}
   .btn-primary{background:var(--accent);color:#fff}
   .btn-primary:hover:not(:disabled){filter:brightness(1.1)}
   .btn-primary:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
-  .btn-secondary{background:var(--card);color:var(--ink);border:1px solid var(--border);
-    margin-top:.5rem}
+  .btn-secondary{background:var(--card);color:var(--ink);border:1px solid var(--border);margin-top:.5rem}
   .btn-secondary:hover{background:var(--accent-light)}
 
-  .btn-row{display:flex;gap:.5rem;margin-top:1rem}
-  .btn-row .btn{flex:1}
-
-  /* Batch view */
+  /* Summary */
   .summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.25rem}
   .summary-item{text-align:center}
   .summary-item .val{font-size:20px;font-weight:500;color:var(--accent);font-family:var(--mono)}
   .summary-item .label{font-size:10px;color:var(--muted);text-transform:uppercase;
     letter-spacing:.06em;font-family:var(--mono);margin-top:2px}
 
-  .element-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
-    padding:1rem 1.15rem;margin-bottom:.75rem}
-  .element-card .sn-head{font-family:var(--mono);font-size:14px;font-weight:500;margin-bottom:.35rem}
-  .element-card .data-row{font-size:13px;color:var(--muted);font-family:var(--mono);margin-bottom:.2rem}
-  .element-card .link{display:inline-block;margin-top:.4rem;font-size:12px;
-    color:var(--accent);text-decoration:none;font-family:var(--mono)}
-  .element-card .link:hover{text-decoration:underline}
+  /* Aggregation tree */
+  .agg-tree{font-family:var(--mono);font-size:13px;line-height:1.8}
+  .agg-batch{display:flex;align-items:center;gap:.5rem;font-size:14px;font-weight:500;
+    color:var(--ink);margin-bottom:.25rem}
+  .agg-diamond{font-size:18px;color:var(--accent)}
+  .agg-row{display:flex;align-items:center;gap:0;padding:.3rem 0;border-bottom:1px solid var(--border)}
+  .agg-row:last-child{border-bottom:none}
+  .agg-prefix{color:var(--muted);white-space:pre;font-size:14px;line-height:1;margin-right:.35rem}
+  .agg-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-right:.5rem}
+  .agg-sn{flex:1;font-size:12px}
+  .agg-meta{font-size:11px;color:var(--muted);margin-left:.5rem}
+  .agg-link{color:var(--accent);text-decoration:none;font-size:11px;margin-left:.5rem;flex-shrink:0}
+  .agg-link:hover{text-decoration:underline}
 
   .warning-box{background:var(--danger-light);border:1px solid #e0b0b0;border-radius:8px;
     padding:.75rem 1rem;font-size:13px;color:var(--danger);margin-bottom:1rem;
     font-family:var(--mono)}
 
+  .back-banner{display:flex;align-items:center;gap:.5rem;background:var(--accent-light);
+    border:1px solid #b8d9c4;border-radius:8px;padding:.65rem 1rem;margin-bottom:1rem;
+    font-family:var(--mono);font-size:12px;color:var(--accent)}
+  .back-banner a{color:var(--accent);font-weight:500}
+  .back-banner a:hover{text-decoration:underline}
+
   .copied-feedback{display:inline-block;opacity:0;transition:opacity .3s;margin-left:.5rem;
     color:var(--accent);font-size:13px}
   .copied-feedback.show{opacity:1}
 
-  /* Footer */
   .footer{text-align:center;font-size:11px;color:var(--muted);font-family:var(--mono);
     margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border)}
 
-  /* Hide views */
   .hidden{display:none!important}
+  .loading{text-align:center;font-family:var(--mono);font-size:13px;color:var(--muted);
+    padding:2rem 0}
 </style>
 </head>
 <body>
@@ -129,7 +130,6 @@
   </div>
 
   <p class="counter">Gescannt: <strong><span id="count">0</span>/5</strong></p>
-
   <ul id="scan-list" class="scan-list"></ul>
 
   <button id="btn-create" class="btn btn-primary" disabled onclick="createBatch()">
@@ -140,21 +140,35 @@
 <!-- BATCH VIEW -->
 <div id="batch-view" class="wrap hidden">
   <span class="badge">Digital Product Passport</span>
-  <h1>Batch-Ansicht</h1>
+  <h1 id="batch-title">Batch-Ansicht</h1>
   <p class="sub" id="batch-meta"></p>
 
-  <div id="summary-card" class="card">
+  <div id="back-banner" class="back-banner hidden">
+    ↩ Weitergeleitet von <a id="back-link" href="#">Einzel-DPP</a>
+    &nbsp;·&nbsp; <a href="?" style="color:var(--muted)">Einzel-DPP anzeigen</a>
+  </div>
+
+  <div id="summary-card" class="card hidden">
     <div class="card-label">Zusammenfassung</div>
     <div id="summary-grid" class="summary-grid"></div>
   </div>
 
   <div id="warning-box" class="warning-box hidden"></div>
-  <div id="elements-container"></div>
 
-  <button class="btn btn-primary" onclick="copyLink()">
-    Link kopieren <span id="copied-check" class="copied-feedback">&#10003;</span>
-  </button>
-  <button class="btn btn-secondary" onclick="goToScanner()">Neuen Batch scannen</button>
+  <!-- Aggregation Tree -->
+  <div id="agg-card" class="card hidden">
+    <div class="card-label">Aggregation</div>
+    <div id="agg-tree" class="agg-tree"></div>
+  </div>
+
+  <div id="loading" class="loading">Lade Passport-Daten…</div>
+
+  <div class="hidden" id="batch-actions">
+    <button class="btn btn-primary" onclick="copyLink()">
+      Link kopieren <span id="copied-check" class="copied-feedback">&#10003;</span>
+    </button>
+    <button class="btn btn-secondary" onclick="goToScanner()">Neuen Batch scannen</button>
+  </div>
 
   <div class="footer">Eurotube &ndash; FHNW | Hyperloop DPP System</div>
 </div>
@@ -167,6 +181,7 @@
 <script>
 const MAX_ITEMS = 5;
 const PASSPORT_BASE = 'https://DPPIP.github.io/DPP-EUROTUBE/passports/';
+const MANIFEST_URL  = 'https://DPPIP.github.io/DPP-EUROTUBE/passports/manifest.json';
 const SN_REGEX = /SN-\d+/;
 
 let scannedSNs = [];
@@ -175,41 +190,152 @@ let audioCtx = null;
 
 // ─── INIT ───
 function init() {
-  const hash = window.location.hash.replace('#', '');
-  if (hash && hash.startsWith('SN-')) {
-    showBatchView(hash.split(','));
+  var params = new URLSearchParams(window.location.search);
+  var batchId = params.get('batch');
+  var fromFile = params.get('from');
+
+  if (batchId) {
+    // Redirected from individual passport → load batch from manifest
+    showBatchViewById(batchId, fromFile);
   } else {
-    showScannerView();
+    // Legacy hash support (manual batch creation)
+    var hash = window.location.hash.replace('#', '');
+    if (hash && hash.startsWith('SN-')) {
+      showBatchView(hash.split(','), null, null);
+    } else {
+      showScannerView();
+    }
   }
 }
 
-// ─── AUDIO BEEP ───
-function playBeep() {
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.value = 0.3;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-    osc.stop(audioCtx.currentTime + 0.15);
-  } catch (e) { /* silent fail */ }
+// ─── LOAD BATCH BY ID (via manifest) ───
+function showBatchViewById(batchId, fromFile) {
+  document.getElementById('scanner-view').classList.add('hidden');
+  document.getElementById('scanner-footer').classList.add('hidden');
+  document.getElementById('batch-view').classList.remove('hidden');
+  document.getElementById('batch-title').textContent = batchId;
+  document.getElementById('batch-meta').textContent = 'Wird geladen…';
+
+  // Show back-banner if redirected from individual passport
+  if (fromFile) {
+    var sn = fromFile.replace('.html', '');
+    var banner = document.getElementById('back-banner');
+    var link = document.getElementById('back-link');
+    link.href = '../passports/' + fromFile + '?single=1';
+    link.textContent = sn;
+    banner.classList.remove('hidden');
+    // Update "Einzel-DPP anzeigen" link
+    banner.querySelector('a[href="?"]').href = '../passports/' + fromFile + '?single=1';
+  }
+
+  fetch(MANIFEST_URL)
+    .then(function(r) { return r.json(); })
+    .then(function(manifest) {
+      var entries = manifest.filter(function(e) { return e.batch === batchId; });
+      if (entries.length === 0) {
+        document.getElementById('batch-meta').textContent = 'Keine Segmente gefunden für ' + batchId;
+        document.getElementById('loading').classList.add('hidden');
+        return;
+      }
+      var sns = entries.map(function(e) { return e.sn; });
+      showBatchView(sns, batchId, fromFile);
+    })
+    .catch(function() {
+      document.getElementById('batch-meta').textContent = 'Fehler beim Laden des Manifests';
+      document.getElementById('loading').classList.add('hidden');
+    });
 }
 
-// ─── TOAST ───
-function showToast(msg, duration) {
-  duration = duration || 2000;
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, duration);
+// ─── BATCH VIEW (core render) ───
+function showBatchView(sns, batchId, fromFile) {
+  document.getElementById('scanner-view').classList.add('hidden');
+  document.getElementById('scanner-footer').classList.add('hidden');
+  document.getElementById('batch-view').classList.remove('hidden');
+
+  if (batchId) {
+    document.getElementById('batch-title').textContent = batchId;
+  }
+
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('batch-meta').textContent =
+    sns.length + ' Segmente · ' + today;
+
+  var fetches = sns.map(function(sn) {
+    return fetch(PASSPORT_BASE + sn + '.jsonld')
+      .then(function(r) { return r.json(); })
+      .then(function(jld) {
+        return {
+          sn:          sn,
+          datum:       (jld['bsdd:Herstellungsdatum'] || {})['@value'] || '',
+          temperatur:  (jld['bsdd:AussentemperaturSchalung'] || {})['@value'] || null,
+          dauer:       (jld['bsdd:DauerInSchalung'] || {})['@value'] || null,
+          status:      jld['bsdd:SegmentStatus'] || '',
+          uri:         jld['@id'] || (PASSPORT_BASE + sn + '.html'),
+          batch:       jld['bsdd:BatchID'] || batchId || ''
+        };
+      })
+      .catch(function() { return { sn: sn, error: true }; });
+  });
+
+  Promise.all(fetches).then(function(results) {
+    renderBatch(sns, results, batchId || (results[0] && results[0].batch) || '');
+  });
 }
 
-// ─── SCANNER VIEW ───
+function renderBatch(sns, results, batchId) {
+  document.getElementById('loading').classList.add('hidden');
+
+  var valid = results.filter(function(r) { return !r.error && r.temperatur !== null; });
+  var missing = results.filter(function(r) { return r.error; });
+
+  // Warning
+  var wb = document.getElementById('warning-box');
+  if (missing.length > 0) {
+    wb.classList.remove('hidden');
+    wb.textContent = 'Passport nicht gefunden: ' + missing.map(function(r){return r.sn}).join(', ');
+  }
+
+  // Summary
+  if (valid.length > 0) {
+    var avgTemp = 0, avgDur = 0;
+    valid.forEach(function(el) {
+      avgTemp += parseFloat(el.temperatur);
+      avgDur  += parseFloat(el.dauer);
+    });
+    var n = valid.length;
+    document.getElementById('summary-grid').innerHTML =
+      '<div class="summary-item"><div class="val">' + (avgTemp/n).toFixed(1) + '&deg;C</div><div class="label">&Oslash; Temperatur</div></div>' +
+      '<div class="summary-item"><div class="val">' + n + '</div><div class="label">Segmente</div></div>' +
+      '<div class="summary-item"><div class="val">' + (avgDur/n).toFixed(1) + '</div><div class="label">&Oslash; Dauer (min)</div></div>';
+    document.getElementById('summary-card').classList.remove('hidden');
+  }
+
+  // Aggregation tree
+  var tree = document.getElementById('agg-tree');
+  var html = '<div class="agg-batch"><span class="agg-diamond">&#9671;</span> ' + (batchId || 'Batch') + '</div>';
+
+  results.forEach(function(el, idx) {
+    var isLast = (idx === results.length - 1);
+    var prefix = isLast ? '└── ' : '├── ';
+    html += '<div class="agg-row">';
+    html += '<span class="agg-prefix">' + prefix + '</span>';
+    html += '<span class="agg-dot"></span>';
+    html += '<span class="agg-sn">' + el.sn + '</span>';
+    if (!el.error) {
+      html += '<span class="agg-meta">' + (el.temperatur || '–') + '&deg;C · ' + (el.dauer || '–') + ' min</span>';
+      html += '<a class="agg-link" href="' + el.uri + '?single=1" target="_blank">Einzel-DPP &rarr;</a>';
+    } else {
+      html += '<span class="agg-meta" style="color:var(--danger)">nicht gefunden</span>';
+    }
+    html += '</div>';
+  });
+
+  tree.innerHTML = html;
+  document.getElementById('agg-card').classList.remove('hidden');
+  document.getElementById('batch-actions').classList.remove('hidden');
+}
+
+// ─── SCANNER ───
 function showScannerView() {
   document.getElementById('scanner-view').classList.remove('hidden');
   document.getElementById('scanner-footer').classList.remove('hidden');
@@ -220,65 +346,38 @@ function showScannerView() {
 }
 
 function startScanner() {
-  if (html5QrCode) {
-    try { html5QrCode.stop(); } catch (e) {}
-  }
+  if (html5QrCode) { try { html5QrCode.stop(); } catch(e) {} }
   html5QrCode = new Html5Qrcode('reader');
   html5QrCode.start(
     { facingMode: 'environment' },
     { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
     onScanSuccess,
     function() {}
-  ).catch(function(err) {
+  ).catch(function() {
     document.getElementById('scanner-box').innerHTML =
       '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px">' +
-      'Kamera-Zugriff nicht m&ouml;glich.<br>Bitte Berechtigung erteilen.' +
-      '</div>';
+      'Kamera-Zugriff nicht m&ouml;glich.<br>Bitte Berechtigung erteilen.</div>';
   });
 }
 
 function onScanSuccess(decodedText) {
-  const match = decodedText.match(SN_REGEX);
+  var match = decodedText.match(SN_REGEX);
   if (!match) return;
-
-  const sn = match[0];
-
-  // Duplicate check
-  if (scannedSNs.indexOf(sn) !== -1) {
-    showToast('Bereits gescannt: ' + sn);
-    return;
-  }
-
-  // Max check
+  var sn = match[0];
+  if (scannedSNs.indexOf(sn) !== -1) { showToast('Bereits gescannt: ' + sn); return; }
   if (scannedSNs.length >= MAX_ITEMS) return;
-
   scannedSNs.push(sn);
-
-  // Haptic feedback
   if (navigator.vibrate) navigator.vibrate(100);
   playBeep();
-
   renderScanList();
-
-  // Stop scanner when 5 reached
-  if (scannedSNs.length >= MAX_ITEMS) {
-    try { html5QrCode.stop(); } catch (e) {}
-  }
+  if (scannedSNs.length >= MAX_ITEMS) { try { html5QrCode.stop(); } catch(e) {} }
 }
 
 function removeSN(index) {
   scannedSNs.splice(index, 1);
   renderScanList();
-  // Restart scanner if we dropped below 5
   if (scannedSNs.length < MAX_ITEMS && html5QrCode) {
-    try {
-      html5QrCode.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
-        onScanSuccess,
-        function() {}
-      ).catch(function() {});
-    } catch (e) {}
+    try { html5QrCode.start({facingMode:'environment'},{fps:10,qrbox:{width:220,height:220}},onScanSuccess,function(){}); } catch(e) {}
   }
 }
 
@@ -287,16 +386,11 @@ function renderScanList() {
   var html = '';
   for (var i = 0; i < MAX_ITEMS; i++) {
     if (i < scannedSNs.length) {
-      html += '<li class="scan-item">' +
-        '<span class="icon check">&#10003;</span>' +
+      html += '<li class="scan-item"><span class="icon check">&#10003;</span>' +
         '<span class="sn">' + scannedSNs[i] + '</span>' +
-        '<button class="remove" onclick="removeSN(' + i + ')" title="Entfernen">&times;</button>' +
-        '</li>';
+        '<button class="remove" onclick="removeSN(' + i + ')">&times;</button></li>';
     } else {
-      html += '<li class="scan-item empty">' +
-        '<span class="icon">&#9675;</span>' +
-        '<span class="sn">...</span>' +
-        '</li>';
+      html += '<li class="scan-item empty"><span class="icon">&#9675;</span><span class="sn">...</span></li>';
     }
   }
   list.innerHTML = html;
@@ -306,125 +400,42 @@ function renderScanList() {
 
 function createBatch() {
   if (scannedSNs.length < MAX_ITEMS) return;
-  try { html5QrCode.stop(); } catch (e) {}
+  try { html5QrCode.stop(); } catch(e) {}
   window.location.hash = scannedSNs.join(',');
-  showBatchView(scannedSNs.slice());
+  showBatchView(scannedSNs.slice(), null, null);
 }
 
-// ─── BATCH VIEW ───
-function showBatchView(sns) {
-  document.getElementById('scanner-view').classList.add('hidden');
-  document.getElementById('scanner-footer').classList.add('hidden');
-  document.getElementById('batch-view').classList.remove('hidden');
-
-  var today = new Date().toISOString().slice(0, 10);
-  document.getElementById('batch-meta').textContent =
-    sns.length + ' Elemente | Erstellt: ' + today;
-
-  // Fetch individual .jsonld files in parallel
-  var fetches = sns.map(function(sn) {
-    return fetch(PASSPORT_BASE + sn + '.jsonld')
-      .then(function(r) { return r.json(); })
-      .then(function(jld) {
-        var pdata = jld['espr:productionData'] || {};
-        return {
-          Serial:      sn,
-          Datum:       jld['productionDate'] || '',
-          Temperatur:  (pdata['espr:averageTemperature'] || {})['@value'] || null,
-          Feuchtigkeit:(pdata['espr:averageHumidity']    || {})['@value'] || null,
-          Dauer:       (pdata['espr:curingDuration']     || {})['@value'] || null,
-          uri:         jld['@id'] || (PASSPORT_BASE + sn + '.html')
-        };
-      })
-      .catch(function() { return { Serial: sn, error: true }; });
-  });
-
-  Promise.all(fetches).then(function(results) { renderBatch(sns, results); });
+// ─── UTILS ───
+function playBeep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.frequency.value = 880; osc.type = 'sine'; gain.gain.value = 0.3;
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
 }
 
-function renderBatch(sns, results) {
-  var elements = [];
-  var missing = [];
-
-  results.forEach(function(r) {
-    if (r.error) { missing.push(r.Serial); } else { elements.push(r); }
-  });
-
-  // Warning
-  var wb = document.getElementById('warning-box');
-  if (missing.length > 0) {
-    wb.classList.remove('hidden');
-    wb.textContent = 'Passport nicht gefunden fuer: ' + missing.join(', ');
-  } else {
-    wb.classList.add('hidden');
-  }
-
-  // Summary
-  var sg = document.getElementById('summary-grid');
-  var valid = elements.filter(function(e) { return e.Temperatur !== null; });
-  if (valid.length > 0) {
-    var avgTemp = 0, avgHum = 0, avgDur = 0;
-    valid.forEach(function(el) {
-      avgTemp += parseFloat(el.Temperatur);
-      avgHum  += parseFloat(el.Feuchtigkeit);
-      avgDur  += parseFloat(el.Dauer);
-    });
-    var n = valid.length;
-    sg.innerHTML =
-      '<div class="summary-item"><div class="val">' + (avgTemp / n).toFixed(1) + '&deg;C</div><div class="label">&Oslash; Temperatur</div></div>' +
-      '<div class="summary-item"><div class="val">' + (avgHum / n).toFixed(1) + '%</div><div class="label">&Oslash; Feuchtigkeit</div></div>' +
-      '<div class="summary-item"><div class="val">' + (avgDur / n).toFixed(1) + 's</div><div class="label">&Oslash; Dauer</div></div>';
-    document.getElementById('summary-card').classList.remove('hidden');
-  } else {
-    document.getElementById('summary-card').classList.add('hidden');
-  }
-
-  // Element cards
-  var container = document.getElementById('elements-container');
-  var html = '';
-
-  results.forEach(function(el, idx) {
-    html += '<div class="element-card">';
-    html += '<div class="sn-head">Element ' + (idx + 1) + ' &ndash; ' + el.Serial + '</div>';
-    if (!el.error) {
-      html += '<div class="data-row">' + el.Temperatur + '&deg;C &ensp;|&ensp; ' +
-        el.Feuchtigkeit + '% &ensp;|&ensp; ' + el.Dauer + 's</div>';
-      html += '<div class="data-row">' + el.Datum + '</div>';
-      html += '<a class="link" href="' + el.uri + '" target="_blank">&rarr; Einzel-DPP &ouml;ffnen</a>';
-    } else {
-      html += '<div class="data-row">Kein Passport gefunden</div>';
-    }
-    html += '</div>';
-  });
-
-  container.innerHTML = html;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
 }
 
 function copyLink() {
-  var url = window.location.href;
-  navigator.clipboard.writeText(url).then(function() {
+  navigator.clipboard.writeText(window.location.href).then(function() {
     var c = document.getElementById('copied-check');
     c.classList.add('show');
     setTimeout(function() { c.classList.remove('show'); }, 1500);
-  }).catch(function() {
-    showToast('Kopieren fehlgeschlagen');
-  });
+  }).catch(function() { showToast('Kopieren fehlgeschlagen'); });
 }
 
 function goToScanner() {
-  window.location.hash = '';
-  showScannerView();
+  window.location.href = window.location.pathname;
 }
 
-// Listen for hash changes
-window.addEventListener('hashchange', function() {
-  var hash = window.location.hash.replace('#', '');
-  if (hash && hash.startsWith('SN-')) {
-    showBatchView(hash.split(','));
-  }
-});
-
-// Start
 init();
 </script>
 </body>
