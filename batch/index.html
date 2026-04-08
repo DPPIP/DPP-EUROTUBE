@@ -72,12 +72,13 @@
   .btn-secondary{background:var(--card);color:var(--ink);border:1px solid var(--border);margin-top:.5rem}
   .btn-secondary:hover{background:var(--accent-light)}
 
-  /* Summary */
-  .summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:.25rem}
-  .summary-item{text-align:center}
-  .summary-item .val{font-size:20px;font-weight:500;color:var(--accent);font-family:var(--mono)}
-  .summary-item .label{font-size:10px;color:var(--muted);text-transform:uppercase;
-    letter-spacing:.06em;font-family:var(--mono);margin-top:2px}
+  /* Rows (used in batch-info and status cards) */
+  .row{display:flex;align-items:center;gap:8px;padding:9px 0;
+    border-bottom:1px solid var(--border);font-size:13px}
+  .row:last-child{border-bottom:none}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+  .key{color:var(--muted);flex:1}
+  .vm{font-family:var(--mono);font-size:12px}
 
   /* Aggregation tree */
   .agg-tree{font-family:var(--mono);font-size:13px;line-height:1.8}
@@ -114,23 +115,8 @@
   .loading{text-align:center;font-family:var(--mono);font-size:13px;color:var(--muted);
     padding:2rem 0}
 
-  /* Lifecycle table */
-  .lc-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
-  .lc-table th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-    color:var(--muted);padding:.4rem .5rem;border-bottom:1px solid var(--border);font-weight:500}
-  .lc-table td{padding:.55rem .5rem;border-bottom:1px solid var(--border);vertical-align:middle}
-  .lc-table tr:last-child td{border-bottom:none}
-  .lc-table .field{color:var(--ink);font-weight:500}
-  .lc-table .type{color:var(--muted);font-size:11px}
-  .lc-table .phase{color:var(--muted);font-size:11px}
-  .lc-val{font-family:var(--mono);font-size:12px}
   .lc-open{color:var(--muted);font-style:italic;font-size:12px}
   .lc-done{color:var(--accent);font-size:12px}
-  .tag{display:inline-block;font-size:10px;font-family:var(--mono);padding:2px 7px;
-    border-radius:4px;font-weight:500;letter-spacing:.05em}
-  .tag-static{background:#EAF2ED;color:#2D5A3D}
-  .tag-dynamic{background:#FFF3E0;color:#C25A00}
-  .tag-relational{background:#E8EAF6;color:#3949AB}
 </style>
 </head>
 <body>
@@ -166,33 +152,26 @@
     &nbsp;·&nbsp; <a href="?" style="color:var(--muted)">Einzel-DPP anzeigen</a>
   </div>
 
-  <div id="summary-card" class="card hidden">
-    <div class="card-label">Zusammenfassung</div>
-    <div id="summary-grid" class="summary-grid"></div>
-  </div>
-
   <div id="warning-box" class="warning-box hidden"></div>
 
-  <!-- Aggregation Tree -->
+  <!-- 1. Batch-Info (oben) -->
+  <div id="batchinfo-card" class="card hidden">
+    <div class="card-label">Batch</div>
+    <div class="row"><span class="dot"></span><span class="key">Batch ID</span><span id="lc-batchid" class="vm"></span></div>
+    <div class="row"><span class="dot"></span><span class="key">Verbindungsdatum</span><span id="lc-verbindung" class="vm lc-open">offen</span></div>
+  </div>
+
+  <!-- 2. Aggregation (mitte) -->
   <div id="agg-card" class="card hidden">
     <div class="card-label">Aggregation</div>
     <div id="agg-tree" class="agg-tree"></div>
   </div>
 
-  <!-- Lifecycle Card -->
-  <div id="lifecycle-card" class="card hidden">
-    <div class="card-label">Lebenszyklus</div>
-    <table class="lc-table">
-      <thead>
-        <tr>
-          <th>Feld</th>
-          <th>Typ</th>
-          <th>Phase</th>
-          <th>Wert</th>
-        </tr>
-      </thead>
-      <tbody id="lc-tbody"></tbody>
-    </table>
+  <!-- 3. Status + Einbaudatum (unten) -->
+  <div id="status-card" class="card hidden">
+    <div class="card-label">Status</div>
+    <div class="row"><span class="dot"></span><span class="key">Status</span><span id="lc-status" class="vm"></span></div>
+    <div class="row"><span class="dot"></span><span class="key">Einbaudatum</span><span class="vm lc-open">offen</span></div>
   </div>
 
   <div id="loading" class="loading">Lade Passport-Daten…</div>
@@ -323,7 +302,7 @@ function showBatchView(sns, batchId, fromFile) {
 function renderBatch(sns, results, batchId) {
   document.getElementById('loading').classList.add('hidden');
 
-  var valid = results.filter(function(r) { return !r.error && r.temperatur !== null; });
+  var valid   = results.filter(function(r) { return !r.error; });
   var missing = results.filter(function(r) { return r.error; });
 
   // Warning
@@ -333,19 +312,26 @@ function renderBatch(sns, results, batchId) {
     wb.textContent = 'Passport nicht gefunden: ' + missing.map(function(r){return r.sn}).join(', ');
   }
 
-  // Summary
-  if (valid.length > 0) {
-    var avgTemp = 0, avgDur = 0;
-    valid.forEach(function(el) {
-      avgTemp += parseFloat(el.temperatur);
-      avgDur  += parseFloat(el.dauer);
-    });
-    var n = valid.length;
-    document.getElementById('summary-grid').innerHTML =
-      '<div class="summary-item"><div class="val">' + (avgTemp/n).toFixed(1) + '&deg;C</div><div class="label">&Oslash; Temperatur</div></div>' +
-      '<div class="summary-item"><div class="val">' + n + '</div><div class="label">Segmente</div></div>' +
-      '<div class="summary-item"><div class="val">' + (avgDur/n).toFixed(1) + '</div><div class="label">&Oslash; Dauer (min)</div></div>';
-    document.getElementById('summary-card').classList.remove('hidden');
+  // 1. Batch-Info card (oben)
+  var first = valid[0];
+  if (first) {
+    document.getElementById('lc-batchid').textContent = first.batch || batchId || '–';
+    var verbEl = document.getElementById('lc-verbindung');
+    if (first.verbindungsdatum) {
+      verbEl.textContent = first.verbindungsdatum;
+      verbEl.classList.remove('lc-open');
+      verbEl.classList.add('lc-done');
+    }
+    document.getElementById('batchinfo-card').classList.remove('hidden');
+  }
+
+  // 3. Status card (unten) — zeige "Verbunden" wenn BatchStatus gesetzt
+  if (first) {
+    var statusVal = first.batchStatus ? 'Verbunden' : (first.status || '–');
+    var statusEl = document.getElementById('lc-status');
+    statusEl.textContent = statusVal;
+    statusEl.style.color = first.batchStatus ? 'var(--accent)' : '';
+    document.getElementById('status-card').classList.remove('hidden');
   }
 
   // Aggregation tree
@@ -370,77 +356,7 @@ function renderBatch(sns, results, batchId) {
 
   tree.innerHTML = html;
   document.getElementById('agg-card').classList.remove('hidden');
-
-  // Lifecycle table (use first valid result for batch-level fields)
-  renderLifecycle(batchId, results);
-
   document.getElementById('batch-actions').classList.remove('hidden');
-}
-
-function renderLifecycle(batchId, results) {
-  var r = results.find(function(e) { return !e.error; });
-  if (!r) return;
-
-  // Collect unique statuses and verlinkung across all segments
-  var statuses = results.filter(function(e){return !e.error;}).map(function(e){return e.status;});
-  var uniqueStatus = statuses.filter(function(v,i,a){return a.indexOf(v)===i;}).join(', ');
-  var verlinkungCount = results.reduce(function(acc,e){return acc+(e.verlinkung?e.verlinkung.length:0);},0);
-
-  function val(v, fallback) {
-    if (v === null || v === undefined || v === '') return fallback || null;
-    return v;
-  }
-  function offen() { return '<span class="lc-open">offen</span>'; }
-  function done(v) { return '<span class="lc-done">' + v + '</span>'; }
-  function tag(type) {
-    var cls = type === 'Statisch' ? 'tag-static' : type === 'Dynamisch' ? 'tag-dynamic' : 'tag-relational';
-    return '<span class="tag ' + cls + '">' + type + '</span>';
-  }
-
-  var rows = [
-    {
-      feld: 'BatchID',
-      typ: 'Statisch', phase: 'Montage',
-      wert: done(r.batch)
-    },
-    {
-      feld: 'Verbindungsdatum',
-      typ: 'Statisch', phase: 'Montage',
-      wert: val(r.verbindungsdatum) ? done(r.verbindungsdatum) : offen()
-    },
-    {
-      feld: 'Verlinkung Bauteile',
-      typ: 'Relational', phase: 'Montage',
-      wert: verlinkungCount > 0
-        ? done(verlinkungCount + ' Bauteil(e) verknüpft')
-        : offen()
-    },
-    {
-      feld: 'Status',
-      typ: 'Dynamisch', phase: 'Laufend',
-      wert: uniqueStatus
-        ? '<span class="lc-val" style="color:var(--accent)">' + uniqueStatus + '</span>'
-        : offen()
-    },
-    {
-      feld: 'Einbaudatum',
-      typ: 'Statisch', phase: 'Einbau',
-      wert: val(r.einbaudatum) ? done(r.einbaudatum) : offen()
-    }
-  ];
-
-  var html = '';
-  rows.forEach(function(row) {
-    html += '<tr>' +
-      '<td class="field">' + row.feld + '</td>' +
-      '<td>' + tag(row.typ) + '</td>' +
-      '<td class="phase">' + row.phase + '</td>' +
-      '<td>' + row.wert + '</td>' +
-      '</tr>';
-  });
-
-  document.getElementById('lc-tbody').innerHTML = html;
-  document.getElementById('lifecycle-card').classList.remove('hidden');
 }
 
 // ─── SCANNER ───
