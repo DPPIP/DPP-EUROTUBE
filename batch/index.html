@@ -113,6 +113,24 @@
   .hidden{display:none!important}
   .loading{text-align:center;font-family:var(--mono);font-size:13px;color:var(--muted);
     padding:2rem 0}
+
+  /* Lifecycle table */
+  .lc-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+  .lc-table th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);padding:.4rem .5rem;border-bottom:1px solid var(--border);font-weight:500}
+  .lc-table td{padding:.55rem .5rem;border-bottom:1px solid var(--border);vertical-align:middle}
+  .lc-table tr:last-child td{border-bottom:none}
+  .lc-table .field{color:var(--ink);font-weight:500}
+  .lc-table .type{color:var(--muted);font-size:11px}
+  .lc-table .phase{color:var(--muted);font-size:11px}
+  .lc-val{font-family:var(--mono);font-size:12px}
+  .lc-open{color:var(--muted);font-style:italic;font-size:12px}
+  .lc-done{color:var(--accent);font-size:12px}
+  .tag{display:inline-block;font-size:10px;font-family:var(--mono);padding:2px 7px;
+    border-radius:4px;font-weight:500;letter-spacing:.05em}
+  .tag-static{background:#EAF2ED;color:#2D5A3D}
+  .tag-dynamic{background:#FFF3E0;color:#C25A00}
+  .tag-relational{background:#E8EAF6;color:#3949AB}
 </style>
 </head>
 <body>
@@ -159,6 +177,22 @@
   <div id="agg-card" class="card hidden">
     <div class="card-label">Aggregation</div>
     <div id="agg-tree" class="agg-tree"></div>
+  </div>
+
+  <!-- Lifecycle Card -->
+  <div id="lifecycle-card" class="card hidden">
+    <div class="card-label">Lebenszyklus</div>
+    <table class="lc-table">
+      <thead>
+        <tr>
+          <th>Feld</th>
+          <th>Typ</th>
+          <th>Phase</th>
+          <th>Wert</th>
+        </tr>
+      </thead>
+      <tbody id="lc-tbody"></tbody>
+    </table>
   </div>
 
   <div id="loading" class="loading">Lade Passport-Daten…</div>
@@ -265,13 +299,17 @@ function showBatchView(sns, batchId, fromFile) {
       .then(function(r) { return r.json(); })
       .then(function(jld) {
         return {
-          sn:          sn,
-          datum:       (jld['bsdd:Herstellungsdatum'] || {})['@value'] || '',
-          temperatur:  (jld['bsdd:AussentemperaturSchalung'] || {})['@value'] || null,
-          dauer:       (jld['bsdd:DauerInSchalung'] || {})['@value'] || null,
-          status:      jld['bsdd:SegmentStatus'] || '',
-          uri:         jld['@id'] || (PASSPORT_BASE + sn + '.html'),
-          batch:       jld['bsdd:BatchID'] || batchId || ''
+          sn:               sn,
+          datum:            (jld['bsdd:Herstellungsdatum'] || {})['@value'] || '',
+          temperatur:       (jld['bsdd:AussentemperaturSchalung'] || {})['@value'] || null,
+          dauer:            (jld['bsdd:DauerInSchalung'] || {})['@value'] || null,
+          status:           jld['bsdd:SegmentStatus'] || '',
+          uri:              jld['@id'] || (PASSPORT_BASE + sn + '.html'),
+          batch:            jld['bsdd:BatchID'] || batchId || '',
+          verbindungsdatum: jld['bsdd:Verbindungsdatum'] || null,
+          verlinkung:       jld['bsdd:VerlinkungBauteile'] || [],
+          batchStatus:      jld['bsdd:BatchStatus'] || null,
+          einbaudatum:      jld['bsdd:Einbaudatum'] || null
         };
       })
       .catch(function() { return { sn: sn, error: true }; });
@@ -332,7 +370,77 @@ function renderBatch(sns, results, batchId) {
 
   tree.innerHTML = html;
   document.getElementById('agg-card').classList.remove('hidden');
+
+  // Lifecycle table (use first valid result for batch-level fields)
+  renderLifecycle(batchId, results);
+
   document.getElementById('batch-actions').classList.remove('hidden');
+}
+
+function renderLifecycle(batchId, results) {
+  var r = results.find(function(e) { return !e.error; });
+  if (!r) return;
+
+  // Collect unique statuses and verlinkung across all segments
+  var statuses = results.filter(function(e){return !e.error;}).map(function(e){return e.status;});
+  var uniqueStatus = statuses.filter(function(v,i,a){return a.indexOf(v)===i;}).join(', ');
+  var verlinkungCount = results.reduce(function(acc,e){return acc+(e.verlinkung?e.verlinkung.length:0);},0);
+
+  function val(v, fallback) {
+    if (v === null || v === undefined || v === '') return fallback || null;
+    return v;
+  }
+  function offen() { return '<span class="lc-open">offen</span>'; }
+  function done(v) { return '<span class="lc-done">' + v + '</span>'; }
+  function tag(type) {
+    var cls = type === 'Statisch' ? 'tag-static' : type === 'Dynamisch' ? 'tag-dynamic' : 'tag-relational';
+    return '<span class="tag ' + cls + '">' + type + '</span>';
+  }
+
+  var rows = [
+    {
+      feld: 'BatchID',
+      typ: 'Statisch', phase: 'Montage',
+      wert: done(r.batch)
+    },
+    {
+      feld: 'Verbindungsdatum',
+      typ: 'Statisch', phase: 'Montage',
+      wert: val(r.verbindungsdatum) ? done(r.verbindungsdatum) : offen()
+    },
+    {
+      feld: 'Verlinkung Bauteile',
+      typ: 'Relational', phase: 'Montage',
+      wert: verlinkungCount > 0
+        ? done(verlinkungCount + ' Bauteil(e) verknüpft')
+        : offen()
+    },
+    {
+      feld: 'Status',
+      typ: 'Dynamisch', phase: 'Laufend',
+      wert: uniqueStatus
+        ? '<span class="lc-val" style="color:var(--accent)">' + uniqueStatus + '</span>'
+        : offen()
+    },
+    {
+      feld: 'Einbaudatum',
+      typ: 'Statisch', phase: 'Einbau',
+      wert: val(r.einbaudatum) ? done(r.einbaudatum) : offen()
+    }
+  ];
+
+  var html = '';
+  rows.forEach(function(row) {
+    html += '<tr>' +
+      '<td class="field">' + row.feld + '</td>' +
+      '<td>' + tag(row.typ) + '</td>' +
+      '<td class="phase">' + row.phase + '</td>' +
+      '<td>' + row.wert + '</td>' +
+      '</tr>';
+  });
+
+  document.getElementById('lc-tbody').innerHTML = html;
+  document.getElementById('lifecycle-card').classList.remove('hidden');
 }
 
 // ─── SCANNER ───
