@@ -117,6 +117,20 @@
 
   .lc-open{color:var(--muted);font-style:italic;font-size:12px}
   .lc-done{color:var(--accent);font-size:12px}
+
+  /* Token modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
+    display:flex;align-items:center;justify-content:center}
+  .modal{background:var(--card);border-radius:14px;padding:1.75rem;max-width:360px;
+    width:90%;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+  .modal h2{font-size:17px;font-weight:400;margin-bottom:.5rem}
+  .modal p{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:1rem;line-height:1.6}
+  .modal input{width:100%;font-family:var(--mono);font-size:13px;padding:.65rem .85rem;
+    border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-bottom:.75rem;outline:none}
+  .modal input:focus{border-color:var(--accent)}
+  .token-btn{font-size:11px;font-family:var(--mono);color:var(--muted);background:none;
+    border:none;cursor:pointer;text-decoration:underline;display:block;margin-top:.75rem}
+  .saving{opacity:.6;pointer-events:none}
 </style>
 </head>
 <body>
@@ -133,12 +147,24 @@
     <div id="reader"></div>
   </div>
 
-  <p class="counter">Gescannt: <strong><span id="count">0</span>/5</strong></p>
+  <p class="counter">Gescannt: <strong><span id="count">0</span>/6</strong></p>
   <ul id="scan-list" class="scan-list"></ul>
 
   <button id="btn-create" class="btn btn-primary" disabled onclick="createBatch()">
     Batch erstellen
   </button>
+  <button class="token-btn" onclick="showTokenModal()">&#9881; GitHub Token konfigurieren</button>
+</div>
+
+<!-- TOKEN MODAL -->
+<div id="token-modal" class="modal-bg hidden">
+  <div class="modal">
+    <h2>GitHub Token</h2>
+    <p>Personal Access Token (PAT) mit <strong>repo</strong>-Schreibrechten.<br>
+    Wird nur lokal im Browser gespeichert.</p>
+    <input id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx">
+    <button class="btn btn-primary" onclick="saveToken()">Speichern</button>
+  </div>
 </div>
 
 <!-- BATCH VIEW -->
@@ -192,10 +218,83 @@
 </div>
 
 <script>
-const MAX_ITEMS = 5;
+const MAX_ITEMS     = 6;
 const PASSPORT_BASE = 'https://DPPIP.github.io/DPP-EUROTUBE/passports/';
+const BATCH_BASE    = 'https://DPPIP.github.io/DPP-EUROTUBE/batch/';
 const MANIFEST_URL  = 'https://DPPIP.github.io/DPP-EUROTUBE/passports/manifest.json';
-const SN_REGEX = /SN-\d+/;
+const GITHUB_REPO   = 'DPPIP/DPP-EUROTUBE';
+const GITHUB_BRANCH = 'main';
+const BSDD_BASE     = 'https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1';
+const W3ID_BASE     = 'https://w3id.org/hyperloop-dpp';
+const SN_REGEX      = /SN-\d+/;
+
+// ─── TOKEN ───
+function getToken() { return localStorage.getItem('dpp_gh_token') || ''; }
+function showTokenModal() {
+  document.getElementById('token-input').value = getToken();
+  document.getElementById('token-modal').classList.remove('hidden');
+}
+function saveToken() {
+  var t = document.getElementById('token-input').value.trim();
+  if (t) localStorage.setItem('dpp_gh_token', t);
+  document.getElementById('token-modal').classList.add('hidden');
+}
+// Close modal on background click
+document.addEventListener('click', function(e) {
+  if (e.target.id === 'token-modal') document.getElementById('token-modal').classList.add('hidden');
+});
+
+// ─── GITHUB API ───
+async function githubPut(filePath, content, commitMsg) {
+  var token = getToken();
+  if (!token) { showTokenModal(); throw new Error('Kein Token'); }
+
+  var apiUrl = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + filePath;
+  var headers = { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' };
+
+  // Check if file exists → get SHA
+  var sha = null;
+  try {
+    var existing = await fetch(apiUrl, { headers: headers });
+    if (existing.ok) { sha = (await existing.json()).sha; }
+  } catch(e) {}
+
+  var body = {
+    message: commitMsg,
+    content: btoa(unescape(encodeURIComponent(content))),
+    branch:  GITHUB_BRANCH
+  };
+  if (sha) body.sha = sha;
+
+  var res = await fetch(apiUrl, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error('GitHub API Fehler: ' + res.status);
+  return res;
+}
+
+async function createBatchFile(batchId, sns, verbindungsdatum) {
+  var jsonld = {
+    '@context': {
+      'xsd':     'http://www.w3.org/2001/XMLSchema#',
+      'bsdd':    BSDD_BASE + '/prop/',
+      'dpp':     'https://w3id.org/dpp#',
+      'dcterms': 'http://purl.org/dc/terms/'
+    },
+    '@type': ['dpp:DigitalProductPassport', BSDD_BASE + '/class/HyperloopBatch'],
+    '@id':   W3ID_BASE + '/' + batchId,
+    'dpp:status':       'active',
+    'dcterms:created':  verbindungsdatum,
+    'dcterms:modified': verbindungsdatum,
+    'dcterms:creator':  'Eurotube \u2013 FHNW',
+    'bsdd:BatchID':           batchId,
+    'bsdd:Verbindungsdatum':  { '@value': verbindungsdatum, '@type': 'xsd:dateTime' },
+    'bsdd:VerlinkungBauteile': sns.map(function(sn){ return W3ID_BASE + '/' + sn; }),
+    'bsdd:BatchStatus':  'Verbunden',
+    'bsdd:Einbaudatum':  null
+  };
+  var content = JSON.stringify(jsonld, null, 2);
+  await githubPut('batch/' + batchId + '.jsonld', content,
+    'Batch ' + batchId + ' verbunden \u2013 ' + verbindungsdatum);
+}
 
 let scannedSNs = [];
 let html5QrCode = null;
@@ -214,7 +313,7 @@ function init() {
     // Legacy hash support (manual batch creation)
     var hash = window.location.hash.replace('#', '');
     if (hash && hash.startsWith('SN-')) {
-      showBatchView(hash.split(','), null, null);
+      showBatchView(hash.split(','), null, null, null);
     } else {
       showScannerView();
     }
@@ -241,26 +340,33 @@ function showBatchViewById(batchId, fromFile) {
     banner.querySelector('a[href="?"]').href = '../passports/' + fromFile + '?single=1';
   }
 
-  fetch(MANIFEST_URL)
-    .then(function(r) { return r.json(); })
-    .then(function(manifest) {
-      var entries = manifest.filter(function(e) { return e.batch === batchId; });
-      if (entries.length === 0) {
-        document.getElementById('batch-meta').textContent = 'Keine Segmente gefunden für ' + batchId;
-        document.getElementById('loading').classList.add('hidden');
-        return;
-      }
-      var sns = entries.map(function(e) { return e.sn; });
-      showBatchView(sns, batchId, fromFile);
-    })
-    .catch(function() {
-      document.getElementById('batch-meta').textContent = 'Fehler beim Laden des Manifests';
+  // Load manifest + batch .jsonld in parallel
+  Promise.all([
+    fetch(MANIFEST_URL).then(function(r){ return r.json(); }).catch(function(){ return []; }),
+    fetch(BATCH_BASE + batchId + '.jsonld').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+  ]).then(function(results) {
+    var manifest   = results[0];
+    var batchJsonld = results[1];
+    var entries = manifest.filter(function(e) { return e.batch === batchId; });
+    if (entries.length === 0) {
+      document.getElementById('batch-meta').textContent = 'Keine Segmente gefunden für ' + batchId;
       document.getElementById('loading').classList.add('hidden');
-    });
+      return;
+    }
+    var sns = entries.map(function(e) { return e.sn; });
+    // Verbindungsdatum aus batch .jsonld
+    var verbindungsdatum = batchJsonld
+      ? ((batchJsonld['bsdd:Verbindungsdatum'] || {})['@value'] || null)
+      : null;
+    showBatchView(sns, batchId, fromFile, verbindungsdatum);
+  }).catch(function() {
+    document.getElementById('batch-meta').textContent = 'Fehler beim Laden';
+    document.getElementById('loading').classList.add('hidden');
+  });
 }
 
 // ─── BATCH VIEW (core render) ───
-function showBatchView(sns, batchId, fromFile) {
+function showBatchView(sns, batchId, fromFile, verbindungsdatum) {
   document.getElementById('scanner-view').classList.add('hidden');
   document.getElementById('scanner-footer').classList.add('hidden');
   document.getElementById('batch-view').classList.remove('hidden');
@@ -295,11 +401,11 @@ function showBatchView(sns, batchId, fromFile) {
   });
 
   Promise.all(fetches).then(function(results) {
-    renderBatch(sns, results, batchId || (results[0] && results[0].batch) || '');
+    renderBatch(sns, results, batchId || (results[0] && results[0].batch) || '', verbindungsdatum || null);
   });
 }
 
-function renderBatch(sns, results, batchId) {
+function renderBatch(sns, results, batchId, verbindungsdatum) {
   document.getElementById('loading').classList.add('hidden');
 
   var valid   = results.filter(function(r) { return !r.error; });
@@ -317,8 +423,9 @@ function renderBatch(sns, results, batchId) {
   if (first) {
     document.getElementById('lc-batchid').textContent = first.batch || batchId || '–';
     var verbEl = document.getElementById('lc-verbindung');
-    if (first.verbindungsdatum) {
-      verbEl.textContent = first.verbindungsdatum;
+    var vd = verbindungsdatum || first.verbindungsdatum || null;
+    if (vd) {
+      verbEl.textContent = vd;
       verbEl.classList.remove('lc-open');
       verbEl.classList.add('lc-done');
     }
@@ -425,8 +532,31 @@ function renderScanList() {
 function createBatch() {
   if (scannedSNs.length < MAX_ITEMS) return;
   try { html5QrCode.stop(); } catch(e) {}
-  window.location.hash = scannedSNs.join(',');
-  showBatchView(scannedSNs.slice(), null, null);
+
+  var verbindungsdatum = new Date().toISOString().slice(0, 19);
+  var btn = document.getElementById('btn-create');
+  btn.textContent = 'Speichern…';
+  btn.classList.add('saving');
+
+  // Fetch BatchID from first segment
+  fetch(PASSPORT_BASE + scannedSNs[0] + '.jsonld')
+    .then(function(r) { return r.json(); })
+    .then(function(jld) {
+      var batchId = jld['bsdd:BatchID'] || 'LOT-UNBEKANNT';
+      return createBatchFile(batchId, scannedSNs.slice(), verbindungsdatum)
+        .then(function() { return batchId; });
+    })
+    .then(function(batchId) {
+      btn.textContent = 'Batch erstellen';
+      btn.classList.remove('saving');
+      showToastGreen('Batch gespeichert \u2713');
+      showBatchView(scannedSNs.slice(), batchId, null, verbindungsdatum);
+    })
+    .catch(function(err) {
+      btn.textContent = 'Batch erstellen';
+      btn.classList.remove('saving');
+      showToast('Fehler: ' + err.message);
+    });
 }
 
 // ─── UTILS ───
@@ -444,8 +574,15 @@ function playBeep() {
 
 function showToast(msg) {
   var t = document.getElementById('toast');
+  t.style.background = 'var(--danger)';
   t.textContent = msg; t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 2000);
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+function showToastGreen(msg) {
+  var t = document.getElementById('toast');
+  t.style.background = 'var(--accent)';
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
 function copyLink() {
