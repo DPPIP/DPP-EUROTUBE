@@ -8,7 +8,13 @@
 (function() {
   var b = "LOT-2026-15";
   if (b && !new URLSearchParams(window.location.search).get('single')) {
-    window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from=SN-1775655139.html');
+    fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {method:'HEAD'})
+      .then(function(r) {
+        if (r.ok) {
+          window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from=SN-1775655139.html');
+        }
+      })
+      .catch(function(){});
   }
 })();
 </script>

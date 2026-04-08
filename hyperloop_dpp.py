@@ -174,11 +174,17 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DPP – {eintrag['Serial']}</title>
 <script>
-// Redirect to batch view unless ?single=1 is in URL
+// Redirect to batch view only if batch .jsonld already exists
 (function() {{
-  var batchId = "{batch}";
-  if (batchId && !new URLSearchParams(window.location.search).get('single')) {{
-    window.location.replace('../batch/index.html?batch=' + encodeURIComponent(batchId) + '&from=' + encodeURIComponent(window.location.pathname.split('/').pop()));
+  var b = "{batch}";
+  if (b && !new URLSearchParams(window.location.search).get('single')) {{
+    fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {{method:'HEAD'}})
+      .then(function(r) {{
+        if (r.ok) {{
+          window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from={sn}.html');
+        }}
+      }})
+      .catch(function(){{}});
   }}
 }})();
 </script>
