@@ -523,13 +523,33 @@ function onScanSuccess(decodedText) {
   var match = decodedText.match(SN_REGEX);
   if (!match) return;
   var sn = match[0];
-  if (scannedSNs.indexOf(sn) !== -1) { showToast('Bereits gescannt: ' + sn); return; }
+  // Duplikat in aktueller Session
+  if (scannedSNs.indexOf(sn) !== -1) { showToast('⚠ Bereits gescannt: ' + sn); return; }
   if (scannedSNs.length >= MAX_ITEMS) return;
-  scannedSNs.push(sn);
-  if (navigator.vibrate) navigator.vibrate(100);
-  playBeep();
-  renderScanList();
-  if (scannedSNs.length >= MAX_ITEMS) { try { html5QrCode.stop(); } catch(e) {} }
+  // Manifest prüfen: ist SN schon in einem Batch?
+  fetch(MANIFEST_URL, {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(manifest){
+      var entry = manifest.find(function(e){ return e.sn === sn; });
+      if (entry && entry.batch) {
+        showToast('⛔ ' + sn + ' bereits in ' + entry.batch);
+        if (navigator.vibrate) navigator.vibrate([100,50,100]);
+        return;
+      }
+      scannedSNs.push(sn);
+      if (navigator.vibrate) navigator.vibrate(100);
+      playBeep();
+      renderScanList();
+      if (scannedSNs.length >= MAX_ITEMS) { try { html5QrCode.stop(); } catch(e) {} }
+    })
+    .catch(function(){
+      // Bei Fehler trotzdem zulassen (Offline-Fallback)
+      scannedSNs.push(sn);
+      if (navigator.vibrate) navigator.vibrate(100);
+      playBeep();
+      renderScanList();
+      if (scannedSNs.length >= MAX_ITEMS) { try { html5QrCode.stop(); } catch(e) {} }
+    });
 }
 
 function removeSN(index) {
