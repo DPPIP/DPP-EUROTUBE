@@ -6,16 +6,21 @@
 <title>DPP – SN-1775655119</title>
 <script>
 (function() {
-  var b = "LOT-2026-15";
-  if (b && !new URLSearchParams(window.location.search).get('single')) {
-    fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {method:'HEAD'})
-      .then(function(r) {
-        if (r.ok) {
-          window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from=SN-1775655119.html');
-        }
-      })
-      .catch(function(){});
-  }
+  if (new URLSearchParams(window.location.search).get('single')) return;
+  var sn = "SN-1775655119";
+  fetch('https://DPPIP.github.io/DPP-EUROTUBE/passports/manifest.json', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(m){
+      var entry = m.find(function(e){ return e.sn === sn; });
+      var b = entry && entry.batch;
+      if (!b) return;
+      return fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {method:'HEAD'})
+        .then(function(r) {
+          if (r.ok) {
+            window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from=' + sn + '.html');
+          }
+        });
+    }).catch(function(){});
 })();
 </script>
 <script type="application/ld+json">

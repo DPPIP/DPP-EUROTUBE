@@ -134,15 +134,21 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
 <title>DPP \u2013 {sn}</title>
 <script>
 (function() {{
-  var b = "{batch}";
-  if (b && !new URLSearchParams(window.location.search).get('single')) {{
-    fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {{method:'HEAD'}})
-      .then(function(r) {{
-        if (r.ok) {{
-          window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from={sn}.html');
-        }}
-      }}).catch(function(){{}});
-  }}
+  if (new URLSearchParams(window.location.search).get('single')) return;
+  var sn = "{sn}";
+  fetch('https://DPPIP.github.io/DPP-EUROTUBE/passports/manifest.json', {{cache:'no-store'}})
+    .then(function(r){{ return r.json(); }})
+    .then(function(m){{
+      var entry = m.find(function(e){{ return e.sn === sn; }});
+      var b = entry && entry.batch;
+      if (!b) return;
+      return fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {{method:'HEAD'}})
+        .then(function(r) {{
+          if (r.ok) {{
+            window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from=' + sn + '.html');
+          }}
+        }});
+    }}).catch(function(){{}});
 }})();
 </script>
 <script type="application/ld+json">
@@ -277,7 +283,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float,
     """Erstellt DPP mit gescannter Segment-ID."""
     sn    = segment_id
     uri   = f"{W3ID_BASE}/{sn}"
-    batch = batch_nummer()
+    batch = ""   # wird erst beim Batch-Scan in batch/index.html gesetzt
     datum = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     eintrag = {
@@ -315,49 +321,54 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float,
 
 def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
     """
-    Zeigt Scan-Aufforderung. USB QR-Scanner / RFID-Reader füllt
-    das Eingabefeld automatisch (arbeiten wie Tastatur + Enter).
+    Scan-Dialog mit Kamera-Preview (OpenCV + pyzbar).
+    Erkennt QR-Code automatisch → bestätigt sofort.
+    Fallback: manuelles Eingabefeld für USB-Scanner.
     """
+    import tkinter as tk
+    from PIL import Image, ImageTk
+
     dialog = tk.Toplevel(root)
-    dialog.title("QR-Code / RFID scannen")
-    dialog.geometry("400x280")
+    dialog.title("QR-Code scannen")
+    dialog.geometry("420x520")
     dialog.configure(bg="#F4F1EC")
-    dialog.grab_set()   # Modal
+    dialog.grab_set()
     dialog.focus_set()
 
-    tk.Label(dialog, text="Bitte QR-Code oder RFID scannen",
+    tk.Label(dialog, text="QR-Code vor die Kamera halten",
              font=("Arial", 13, "bold"), bg="#F4F1EC", fg="#1A1916"
-             ).pack(pady=(24, 4))
-
-    tk.Label(dialog,
-             text=f"Messung: {t_med}°C · {h_med}% · {dauer} min",
+             ).pack(pady=(16, 2))
+    tk.Label(dialog, text=f"Messung: {t_med}°C  {h_med}%  {dauer} min",
              font=("Arial", 10), bg="#F4F1EC", fg="#7A7870"
-             ).pack(pady=(0, 16))
+             ).pack(pady=(0, 8))
 
-    entry_var = tk.StringVar()
-    entry = tk.Entry(dialog, textvariable=entry_var,
-                     font=("Courier", 13), width=28,
-                     relief="flat", bd=2,
-                     highlightthickness=1, highlightbackground="#DDD9D1",
-                     highlightcolor="#2D5A3D")
-    entry.pack(ipady=8, padx=24)
-    entry.focus_set()
+    # Kamera-Canvas
+    canvas = tk.Canvas(dialog, width=360, height=270, bg="#000",
+                       highlightthickness=0)
+    canvas.pack()
 
-    status_lbl = tk.Label(dialog, text="", font=("Arial", 9),
-                          bg="#F4F1EC", fg="#c0392b")
+    status_lbl = tk.Label(dialog, text="Suche QR-Code…",
+                          font=("Courier", 10), bg="#F4F1EC", fg="#7A7870")
     status_lbl.pack(pady=6)
 
-    def bestaetigen(event=None):
-        raw = entry_var.get().strip()
-        if not raw:
-            status_lbl.config(text="Kein Scan erkannt – bitte nochmals scannen")
-            entry.focus_set()
-            return
+    # Manuelles Eingabefeld (Fallback / USB-Scanner)
+    tk.Label(dialog, text="oder manuell / USB-Scanner:",
+             font=("Arial", 9), bg="#F4F1EC", fg="#aaa").pack()
+    entry_var = tk.StringVar()
+    entry = tk.Entry(dialog, textvariable=entry_var,
+                     font=("Courier", 11), width=30,
+                     relief="flat", highlightthickness=1,
+                     highlightbackground="#DDD9D1", highlightcolor="#2D5A3D")
+    entry.pack(ipady=6, padx=24, pady=(2, 8))
 
-        seg_id = extrahiere_id(raw)
+    scanning = [True]
+    cap = [None]
+
+    def publiziere(seg_id: str):
+        scanning[0] = False
+        if cap[0]:
+            cap[0].release()
         dialog.destroy()
-
-        # DPP erstellen
         status_label.config(text=f"Status: PUBLIZIERE {seg_id}…", fg="#e67e22")
         root.update()
 
@@ -373,18 +384,71 @@ def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
 
         threading.Thread(target=_publish, daemon=True).start()
 
+    def bestaetigen(event=None):
+        raw = entry_var.get().strip()
+        if raw:
+            publiziere(extrahiere_id(raw))
+
     entry.bind("<Return>", bestaetigen)
-
     tk.Button(dialog, text="Bestätigen", command=bestaetigen,
-              font=("Arial", 12), bg="#2D5A3D", fg="white",
-              relief="flat", padx=20, pady=8
-              ).pack(pady=(8, 4))
-
-    tk.Button(dialog, text="Überspringen (ohne Verknüpfung)",
-              command=dialog.destroy,
+              font=("Arial", 11), bg="#2D5A3D", fg="white",
+              relief="flat", padx=16, pady=6).pack(pady=(0, 4))
+    tk.Button(dialog, text="Überspringen",
+              command=lambda: [scanning.__setitem__(0, False),
+                               cap[0].release() if cap[0] else None,
+                               dialog.destroy()],
               font=("Arial", 9), bg="#F4F1EC", fg="#7A7870",
-              relief="flat"
-              ).pack()
+              relief="flat").pack()
+
+    def kamera_loop():
+        try:
+            import cv2
+            from pyzbar import pyzbar as pz
+        except ImportError:
+            status_lbl.config(text="opencv/pyzbar nicht installiert")
+            return
+
+        cap[0] = cv2.VideoCapture(0)
+        if not cap[0].isOpened():
+            status_lbl.config(text="Keine Kamera gefunden – bitte manuell eingeben")
+            return
+
+        def update():
+            if not scanning[0] or not cap[0]:
+                return
+            ret, frame = cap[0].read()
+            if not ret:
+                dialog.after(50, update)
+                return
+
+            # QR erkennen
+            codes = pz.decode(frame)
+            for code in codes:
+                data = code.data.decode("utf-8", errors="ignore").strip()
+                if data:
+                    seg_id = extrahiere_id(data)
+                    status_lbl.config(text=f"Erkannt: {seg_id}", fg="#2D5A3D")
+                    dialog.after(400, lambda sid=seg_id: publiziere(sid))
+                    return
+
+            # Kamerabild anzeigen
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(frame_rgb).resize((360, 270))
+            photo = ImageTk.PhotoImage(img)
+            canvas.photo = photo
+            canvas.create_image(0, 0, anchor="nw", image=photo)
+
+            dialog.after(30, update)
+
+        dialog.after(100, update)
+
+    dialog.protocol("WM_DELETE_WINDOW", lambda: [
+        scanning.__setitem__(0, False),
+        cap[0].release() if cap[0] else None,
+        dialog.destroy()
+    ])
+
+    threading.Thread(target=kamera_loop, daemon=True).start()
 
 
 # ─── Serieller Logger ────────────────────────────────────────────────────────

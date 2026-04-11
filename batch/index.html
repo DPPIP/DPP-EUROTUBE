@@ -226,7 +226,7 @@ const GITHUB_REPO   = 'DPPIP/DPP-EUROTUBE';
 const GITHUB_BRANCH = 'main';
 const BSDD_BASE     = 'https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1';
 const W3ID_BASE     = 'https://w3id.org/hyperloop-dpp';
-const SN_REGEX      = /SN-\d+/;
+const SN_REGEX      = /SN-[A-Z0-9]+/;
 
 // ─── TOKEN ───
 function getToken() { return localStorage.getItem('dpp_gh_token') || ''; }
@@ -269,6 +269,34 @@ async function githubPut(filePath, content, commitMsg) {
   var res = await fetch(apiUrl, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
   if (!res.ok) throw new Error('GitHub API Fehler: ' + res.status);
   return res;
+}
+
+async function updateManifest(batchId, sns) {
+  // Manifest laden, Batch-ID für jedes Segment eintragen, zurückschreiben
+  var manifestUrl = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/passports/manifest.json';
+  var token = getToken();
+  var headers = { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' };
+
+  var existing = await fetch(manifestUrl, { headers: headers });
+  if (!existing.ok) throw new Error('Manifest nicht lesbar');
+  var existingJson = await existing.json();
+  var sha = existingJson.sha;
+  var manifest = JSON.parse(atob(existingJson.content.replace(/\n/g, '')));
+
+  // Batch-ID für jedes gescannte Segment setzen
+  sns.forEach(function(sn) {
+    var entry = manifest.find(function(e) { return e.sn === sn; });
+    if (entry) { entry.batch = batchId; }
+  });
+
+  var body = {
+    message: 'Manifest: Batch ' + batchId + ' für ' + sns.join(', '),
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(manifest, null, 2)))),
+    branch:  GITHUB_BRANCH,
+    sha:     sha
+  };
+  var res = await fetch(manifestUrl, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error('Manifest-Update fehlgeschlagen: ' + res.status);
 }
 
 async function createBatchFile(batchId, sns, verbindungsdatum) {
@@ -543,7 +571,9 @@ function createBatch() {
     .then(function(r) { return r.json(); })
     .then(function(jld) {
       var batchId = jld['bsdd:BatchID'] || 'LOT-UNBEKANNT';
-      return createBatchFile(batchId, scannedSNs.slice(), verbindungsdatum)
+      var sns = scannedSNs.slice();
+      return createBatchFile(batchId, sns, verbindungsdatum)
+        .then(function() { return updateManifest(batchId, sns); })
         .then(function() { return batchId; });
     })
     .then(function(batchId) {
