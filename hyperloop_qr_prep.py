@@ -13,15 +13,14 @@ Verwendung:
 import os
 import base64
 import json
+import random
 from io import BytesIO
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
 W3ID_BASE   = "https://w3id.org/hyperloop-dpp"
-PREFIX      = "SEG"          # Prefix für Labels (SEG-001, SEG-002, ...)
-START       = 1              # Erste Nummer
-COUNT       = 20             # Anzahl QR-Codes generieren
-OUTPUT_DIR  = "qr_labels"   # Ausgabeordner
+COUNT       = 20                # Anzahl QR-Codes generieren
+OUTPUT_DIR  = "qr_labels"      # Ausgabeordner
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -46,18 +45,24 @@ def make_qr_b64(uri: str) -> str:
         return ""
 
 
-def label_id(nr: int) -> str:
-    return f"{PREFIX}-{nr:03d}"
+def generate_serial() -> str:
+    """Generiert eine zufällige 10-stellige numerische Seriennummer."""
+    return str(random.randint(1000000000, 9999999999))
+
+
+def label_id(serial: str) -> str:
+    return f"SN-{serial}"
 
 
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     labels = []
-    for nr in range(START, START + COUNT):
-        lid = label_id(nr)
+    for _ in range(COUNT):
+        serial = generate_serial()
+        lid = label_id(serial)
         uri = f"{W3ID_BASE}/{lid}"
-        print(f"  Generiere {lid} → {uri}")
+        print(f"  Generiere {lid} -> {uri}")
 
         qrb64 = make_qr_b64(uri)
 
@@ -80,8 +85,8 @@ def main():
     with open(sheet_path, "w", encoding="utf-8") as f:
         f.write(make_sheet_html(labels))
 
-    print(f"\n  {COUNT} Labels erstellt → {OUTPUT_DIR}/sheet.html")
-    print(f"  Manifest → {manifest_path}")
+    print(f"\n  {COUNT} Labels erstellt -> {OUTPUT_DIR}/sheet.html")
+    print(f"  Manifest -> {manifest_path}")
 
 
 def make_sheet_html(labels: list) -> str:
