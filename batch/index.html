@@ -577,30 +577,35 @@ function renderScanList() {
   document.getElementById('btn-create').disabled = scannedSNs.length < MAX_ITEMS;
 }
 
+function genBatchId() {
+  // LOT-YYYY-WW basierend auf ISO-Kalenderwoche
+  var now = new Date();
+  var d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  var day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  var week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return 'LOT-' + d.getUTCFullYear() + '-' + String(week).padStart(2, '0');
+}
+
 function createBatch() {
   if (scannedSNs.length < MAX_ITEMS) return;
   try { html5QrCode.stop(); } catch(e) {}
 
+  var batchId = genBatchId();
   var verbindungsdatum = new Date().toISOString().slice(0, 19);
   var btn = document.getElementById('btn-create');
   btn.textContent = 'Speichern…';
   btn.classList.add('saving');
 
-  // Fetch BatchID from first segment
-  fetch(PASSPORT_BASE + scannedSNs[0] + '.jsonld')
-    .then(function(r) { return r.json(); })
-    .then(function(jld) {
-      var batchId = jld['bsdd:BatchID'] || 'LOT-UNBEKANNT';
-      var sns = scannedSNs.slice();
-      return createBatchFile(batchId, sns, verbindungsdatum)
-        .then(function() { return updateManifest(batchId, sns); })
-        .then(function() { return batchId; });
-    })
-    .then(function(batchId) {
+  var sns = scannedSNs.slice();
+  createBatchFile(batchId, sns, verbindungsdatum)
+    .then(function() { return updateManifest(batchId, sns); })
+    .then(function() {
       btn.textContent = 'Batch erstellen';
       btn.classList.remove('saving');
       showToastGreen('Batch gespeichert \u2713');
-      showBatchView(scannedSNs.slice(), batchId, null, verbindungsdatum);
+      showBatchView(sns, batchId, null, verbindungsdatum);
     })
     .catch(function(err) {
       btn.textContent = 'Batch erstellen';
