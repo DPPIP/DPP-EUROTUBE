@@ -144,6 +144,7 @@ def github_push(serial_nr: str, dateien: list):
                        [os.path.abspath(os.path.join(GITHUB_REPO, p)) for p in dateien], check=True)
         subprocess.run(["git", "-C", GITHUB_REPO, "commit", "-m",
                         f"DPP {serial_nr} hinzugefügt (V2)"], check=True)
+        subprocess.run(["git", "-C", GITHUB_REPO, "pull", "--rebase"], check=True)
         subprocess.run(["git", "-C", GITHUB_REPO, "push"], check=True)
         print(f"  [OK] GitHub Push: {serial_nr}")
     except subprocess.CalledProcessError as e:
