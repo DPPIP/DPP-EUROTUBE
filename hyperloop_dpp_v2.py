@@ -37,6 +37,7 @@ PORT        = "COM7"
 BAUD        = 9600
 
 W3ID_BASE      = "https://w3id.org/hyperloop-dpp"
+GTIN           = "09999000000001"   # GS1 GTIN-14
 GITHUB_PAGES   = "https://DPPIP.github.io/DPP-EUROTUBE"
 GITHUB_REPO    = "C:/Users/david/Documents/DPP-EUROTUBE"
 PASSPORT_DIR   = "passports"
@@ -52,15 +53,18 @@ BSDD_BASE   = "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1"
 def extrahiere_id(scanned: str) -> str:
     """
     Extrahiert die Segment-ID aus dem gescannten QR-Code Text.
-    Beispiele:
-      "https://w3id.org/hyperloop-dpp/SEG-001"  → "SEG-001"
-      "https://w3id.org/hyperloop-dpp/SEG-042"  → "SEG-042"
-      "SEG-007"                                  → "SEG-007"
+    Unterstützt GS1 Digital Link URI Format:
+      "https://w3id.org/hyperloop-dpp/01/09999000000001/21/9867341762"  → "9867341762"
+      "https://w3id.org/hyperloop-dpp/01/09999000000001/10/4521"        → "4521"
+      "9867341762"                                                        → "9867341762"
     """
-    scanned = scanned.strip()
-    # URL-Format: letzter Pfad-Teil
-    if "/" in scanned:
-        return scanned.rstrip("/").split("/")[-1]
+    scanned = scanned.strip().split('?')[0].rstrip('/')
+    if '/21/' in scanned:
+        return scanned.split('/21/')[-1]
+    if '/10/' in scanned:
+        return scanned.split('/10/')[-1]
+    if '/' in scanned:
+        return scanned.split('/')[-1]
     return scanned
 
 
@@ -156,7 +160,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float,
                               segment_id: str):
     """Erstellt DPP mit gescannter Segment-ID."""
     sn    = segment_id
-    uri   = f"{W3ID_BASE}/{sn}"
+    uri   = f"{W3ID_BASE}/01/{GTIN}/21/{sn}"
     batch = ""   # wird erst beim Batch-Scan in batch/index.html gesetzt
     datum = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 

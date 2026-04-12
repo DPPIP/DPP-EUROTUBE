@@ -137,11 +137,24 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- SCANNER VIEW -->
-<div id="scanner-view" class="wrap">
+<!-- SCHRITT 1: BATCH-LABEL SCANNEN -->
+<div id="batch-label-view" class="wrap">
   <span class="badge">Digital Product Passport</span>
-  <h1>Batch Scanner</h1>
-  <p class="sub">QR-Codes scannen, um Batch zu erstellen</p>
+  <h1>Batch-Label scannen</h1>
+  <p class="sub">QR-Code des neuen Batch-Labels scannen</p>
+  <div id="batch-label-box" style="width:100%;border-radius:12px;overflow:hidden;margin-bottom:1.25rem;background:#000;min-height:220px">
+    <div id="batch-label-reader"></div>
+  </div>
+  <p id="batch-label-status" style="text-align:center;font-family:var(--mono);font-size:13px;color:var(--muted);margin-bottom:1rem">Suche Batch-Label…</p>
+  <button class="token-btn" onclick="showTokenModal()">&#9881; GitHub Token konfigurieren</button>
+</div>
+
+<!-- SCHRITT 2 -->
+<!-- SCANNER VIEW -->
+<div id="scanner-view" class="wrap hidden">
+  <span class="badge">Digital Product Passport</span>
+  <h1>Segmente scannen</h1>
+  <p id="batch-sn-display" class="sub" style="font-family:var(--mono);color:var(--accent)"></p>
 
   <div id="scanner-box">
     <div id="reader"></div>
@@ -175,7 +188,7 @@
 
   <div id="back-banner" class="back-banner hidden">
     ↩ Weitergeleitet von <a id="back-link" href="#">Einzel-DPP</a>
-    &nbsp;·&nbsp; <a href="?" style="color:var(--muted)">Einzel-DPP anzeigen</a>
+    &nbsp;·&nbsp; <a id="back-link-alt" href="#" style="color:var(--muted)">Einzel-DPP anzeigen</a>
   </div>
 
   <div id="warning-box" class="warning-box hidden"></div>
@@ -213,7 +226,7 @@
 </div>
 
 <!-- Footer for scanner view -->
-<div id="scanner-footer" class="wrap" style="padding-top:0">
+<div id="scanner-footer" class="wrap hidden" style="padding-top:0">
   <div class="footer">Eurotube &ndash; FHNW | Hyperloop DPP System</div>
 </div>
 
@@ -226,7 +239,10 @@ const GITHUB_REPO   = 'DPPIP/DPP-EUROTUBE';
 const GITHUB_BRANCH = 'main';
 const BSDD_BASE     = 'https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1';
 const W3ID_BASE     = 'https://w3id.org/hyperloop-dpp';
-const SN_REGEX      = /SN-[0-9]+/;
+const GTIN          = '09999000000001';
+
+var batchSN = null;
+var batchLabelScanner = null;
 
 // ─── TOKEN ───
 function getToken() { return localStorage.getItem('dpp_gh_token') || ''; }
@@ -304,14 +320,14 @@ async function createBatchFile(batchId, sns, verbindungsdatum) {
       'dcterms': 'http://purl.org/dc/terms/'
     },
     '@type': ['dpp:DigitalProductPassport', BSDD_BASE + '/class/HyperloopBatch'],
-    '@id':   W3ID_BASE + '/' + batchId,
+    '@id':   W3ID_BASE + '/01/' + GTIN + '/10/' + batchId,
     'dpp:status':       'active',
     'dcterms:created':  verbindungsdatum,
     'dcterms:modified': verbindungsdatum,
     'dcterms:creator':  'Eurotube \u2013 FHNW',
     'bsdd:BatchID':           batchId,
     'bsdd:Verbindungsdatum':  { '@value': verbindungsdatum, '@type': 'xsd:dateTime' },
-    'bsdd:VerlinkungBauteile': sns.map(function(sn){ return W3ID_BASE + '/' + sn; }),
+    'bsdd:VerlinkungBauteile': sns.map(function(sn){ return W3ID_BASE + '/01/' + GTIN + '/21/' + sn; }),
     'bsdd:BatchStatus':  'Verbunden',
     'bsdd:Einbaudatum':  null
   };
@@ -328,24 +344,59 @@ let audioCtx = null;
 function init() {
   var params = new URLSearchParams(window.location.search);
   var batchId = params.get('batch');
-  var fromFile = params.get('from');
+  var scannedSN = params.get('scanned_sn');
 
   if (batchId) {
-    // Redirected from individual passport → load batch from manifest
-    showBatchViewById(batchId, fromFile);
+    showBatchViewById(batchId, scannedSN);
   } else {
-    // Legacy hash support (manual batch creation)
-    var hash = window.location.hash.replace('#', '');
-    if (hash && hash.startsWith('SN-')) {
-      showBatchView(hash.split(','), null, null, null);
-    } else {
-      showScannerView();
-    }
+    showBatchLabelStep();
   }
 }
 
+function showBatchLabelStep() {
+  document.getElementById('batch-label-view').classList.remove('hidden');
+  document.getElementById('scanner-view').classList.add('hidden');
+  document.getElementById('scanner-footer').classList.add('hidden');
+  document.getElementById('batch-view').classList.add('hidden');
+  startBatchLabelScan();
+}
+
+function startBatchLabelScan() {
+  batchLabelScanner = new Html5Qrcode('batch-label-reader');
+  batchLabelScanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
+    function(decodedText) {
+      var sn = extractSerial(decodedText, '10');
+      if (!sn) { showToast('Kein gültiges Batch-Label'); return; }
+      batchSN = sn;
+      try { batchLabelScanner.stop(); } catch(e) {}
+      document.getElementById('batch-label-view').classList.add('hidden');
+      document.getElementById('scanner-view').classList.remove('hidden');
+      document.getElementById('scanner-footer').classList.remove('hidden');
+      document.getElementById('batch-sn-display').textContent = 'Batch: ' + batchSN;
+      startScanner();
+    },
+    function() {}
+  ).catch(function() {
+    document.getElementById('batch-label-status').textContent = 'Kamera nicht verfügbar';
+  });
+}
+
+function extractSerial(text, ai) {
+  // ai = '21' for segment, '10' for batch
+  var marker = '/' + ai + '/';
+  if (text.indexOf(marker) !== -1) {
+    return text.split(marker).pop().split('?')[0].split('/')[0];
+  }
+  // fallback: plain number
+  var m = text.match(/[0-9]{6,}/);
+  return m ? m[0] : null;
+}
+
 // ─── LOAD BATCH BY ID (via manifest) ───
-function showBatchViewById(batchId, fromFile) {
+function showBatchViewById(batchId, scannedSN) {
+  document.getElementById('batch-label-view').classList.add('hidden');
   document.getElementById('scanner-view').classList.add('hidden');
   document.getElementById('scanner-footer').classList.add('hidden');
   document.getElementById('batch-view').classList.remove('hidden');
@@ -353,14 +404,14 @@ function showBatchViewById(batchId, fromFile) {
   document.getElementById('batch-meta').textContent = 'Wird geladen…';
 
   // Show back-banner if redirected from individual passport
-  if (fromFile) {
-    var sn = fromFile;  // fromFile ist jetzt direkt die SN (kein .html)
+  if (scannedSN) {
     var banner = document.getElementById('back-banner');
     var link = document.getElementById('back-link');
-    link.href = '../passports/viewer.html?sn=' + sn + '&single=1';
-    link.textContent = sn;
+    link.href = '../passports/viewer.html?sn=' + scannedSN + '&single=1';
+    link.textContent = scannedSN;
     banner.classList.remove('hidden');
-    banner.querySelector('a[href="?"]').href = '../passports/viewer.html?sn=' + sn + '&single=1';
+    var altLink = document.getElementById('back-link-alt');
+    if (altLink) altLink.href = '../passports/viewer.html?sn=' + scannedSN + '&single=1';
   }
 
   // SNs + Verbindungsdatum direkt aus batch .jsonld lesen
@@ -373,9 +424,14 @@ function showBatchViewById(batchId, fromFile) {
         return;
       }
       var verlinkung = batchJsonld['bsdd:VerlinkungBauteile'] || [];
-      var sns = verlinkung.map(function(uri){ return uri.split('/').pop(); });
+      var sns = verlinkung.map(function(uri){
+        // Extract serial from GS1 URI (/21/SN) or fallback to last segment
+        var u = uri;
+        if (u.indexOf('/21/') !== -1) return u.split('/21/').pop().split('?')[0].split('/')[0];
+        return u.split('/').pop();
+      });
       var verbindungsdatum = (batchJsonld['bsdd:Verbindungsdatum'] || {})['@value'] || null;
-      showBatchView(sns, batchId, fromFile, verbindungsdatum);
+      showBatchView(sns, batchId, scannedSN, verbindungsdatum);
     }).catch(function() {
       document.getElementById('batch-meta').textContent = 'Fehler beim Laden';
       document.getElementById('loading').classList.add('hidden');
@@ -509,9 +565,8 @@ function startScanner() {
 }
 
 function onScanSuccess(decodedText) {
-  var match = decodedText.match(SN_REGEX);
-  if (!match) return;
-  var sn = match[0];
+  var sn = extractSerial(decodedText, '21');
+  if (!sn) return;
   // Duplikat in aktueller Session
   if (scannedSNs.indexOf(sn) !== -1) { showToast('⚠ Bereits gescannt: ' + sn); return; }
   if (scannedSNs.length >= MAX_ITEMS) return;
@@ -576,10 +631,10 @@ function genBatchId() {
 }
 
 function createBatch() {
-  if (scannedSNs.length < MAX_ITEMS) return;
+  if (scannedSNs.length < MAX_ITEMS || !batchSN) return;
   try { html5QrCode.stop(); } catch(e) {}
 
-  var batchId = genBatchId();
+  var batchId = batchSN;
   var verbindungsdatum = new Date().toISOString().slice(0, 19);
   var btn = document.getElementById('btn-create');
   btn.textContent = 'Speichern…';
@@ -636,7 +691,9 @@ function copyLink() {
 }
 
 function goToScanner() {
-  window.location.href = window.location.pathname;
+  batchSN = null;
+  scannedSNs = [];
+  showBatchLabelStep();
 }
 
 init();

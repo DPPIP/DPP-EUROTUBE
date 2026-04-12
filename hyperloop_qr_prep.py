@@ -19,6 +19,7 @@ from io import BytesIO
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
 W3ID_BASE   = "https://w3id.org/hyperloop-dpp"
+GTIN        = "09999000000001"  # GS1 GTIN-14
 COUNT       = 20                # Anzahl QR-Codes generieren
 OUTPUT_DIR  = "qr_labels"      # Ausgabeordner
 
@@ -51,7 +52,7 @@ def generate_serial() -> str:
 
 
 def label_id(serial: str) -> str:
-    return f"SN-{serial}"
+    return serial
 
 
 def main():
@@ -61,8 +62,8 @@ def main():
     for _ in range(COUNT):
         serial = generate_serial()
         lid = label_id(serial)
-        uri = f"{W3ID_BASE}/{lid}"
-        print(f"  Generiere {lid} -> {uri}")
+        uri = f"{W3ID_BASE}/01/{GTIN}/21/{lid}"
+        print(f"  Generiere {lid} -> {uri}  [GS1 SGTIN]")
 
         qrb64 = make_qr_b64(uri)
 

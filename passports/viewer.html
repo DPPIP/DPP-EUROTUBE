@@ -64,6 +64,14 @@ h1{font-size:24px;font-weight:300;margin:.5rem 0 .25rem}
       return r.json();
     })
     .then(function(jld) {
+      // HyperloopBatch type redirect
+      var types = jld['@type'] || [];
+      if (!Array.isArray(types)) types = [types];
+      var isBatch = types.some(function(t){ return typeof t === 'string' && t.endsWith('HyperloopBatch'); });
+      if (isBatch) {
+        window.location.replace('../batch/index.html?batch=' + encodeURIComponent(sn));
+        return;
+      }
       // Batch-Redirect (ausser bei ?single=1)
       if (!single) {
         var b = jld['bsdd:BatchID'];
@@ -71,7 +79,7 @@ h1{font-size:24px;font-weight:300;margin:.5rem 0 .25rem}
           fetch(BASE + '/batch/' + b + '.jsonld', {method:'HEAD'})
             .then(function(r) {
               if (r.ok) window.location.replace(
-                '../batch/index.html?batch=' + encodeURIComponent(b) + '&from=' + encodeURIComponent(sn)
+                '../batch/index.html?batch=' + encodeURIComponent(b) + '&scanned_sn=' + encodeURIComponent(sn)
               );
             }).catch(function(){});
         }
