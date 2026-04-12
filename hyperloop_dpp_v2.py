@@ -122,120 +122,9 @@ def erstelle_jsonld(eintrag: dict) -> dict:
 
 # ─── HTML Generator ──────────────────────────────────────────────────────────
 
-def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
-    uri   = eintrag["uri"]
-    sn    = eintrag["Serial"]
-    batch = eintrag.get("Batch", "")
-    return f"""<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DPP \u2013 {sn}</title>
-<script>
-(function() {{
-  if (new URLSearchParams(window.location.search).get('single')) return;
-  var sn = "{sn}";
-  fetch('https://DPPIP.github.io/DPP-EUROTUBE/passports/' + sn + '.jsonld', {{cache:'no-store'}})
-    .then(function(r){{ return r.json(); }})
-    .then(function(jld){{
-      var b = jld['bsdd:BatchID'];
-      if (!b) return;
-      return fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {{method:'HEAD'}})
-        .then(function(r) {{
-          if (r.ok) {{
-            window.location.replace('../batch/index.html?batch=' + encodeURIComponent(b) + '&from=' + sn + '.html');
-          }}
-        }});
-    }}).catch(function(){{}});
-}})();
-</script>
-<script type="application/ld+json">
-{json.dumps(jsonld, ensure_ascii=False, indent=2)}
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-*{{box-sizing:border-box;margin:0;padding:0}}
-:root{{--bg:#F4F1EC;--card:#FDFCFA;--ink:#1A1916;--muted:#7A7870;--accent:#2D5A3D;--border:#DDD9D1;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif}}
-body{{background:var(--bg);font-family:var(--sans);color:var(--ink);padding:2rem 1rem}}
-.wrap{{max-width:520px;margin:0 auto}}
-.badge{{background:var(--accent);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.12em;padding:4px 10px;border-radius:4px;text-transform:uppercase;display:inline-block}}
-.badge-v2{{background:#2980b9;color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.12em;padding:4px 10px;border-radius:4px;text-transform:uppercase;display:inline-block;margin-left:6px}}
-h1{{font-size:24px;font-weight:300;margin:.5rem 0 .25rem}}
-.sub{{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:1.5rem}}
-.card{{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem}}
-.card-label{{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;font-family:var(--mono)}}
-.metrics{{display:grid;grid-template-columns:1fr 1fr;gap:1rem}}
-.metric label{{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}}
-.metric .val{{font-size:30px;font-weight:300;line-height:1}}
-.metric .unit{{font-size:13px;color:var(--muted);margin-left:2px}}
-.metric.full{{grid-column:1/-1}}
-.row{{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}}
-.row:last-child{{border-bottom:none}}
-.dot{{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}}
-.key{{color:var(--muted);flex:1}}
-.vm{{font-family:var(--mono);font-size:12px}}
-.qr-wrap{{text-align:center;padding:.5rem 0}}
-.qr-wrap img{{width:148px;height:148px;border-radius:8px;border:1px solid var(--border);padding:6px;background:#fff}}
-.uri{{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:8px;word-break:break-all}}
-.single-link{{display:block;text-align:center;margin-top:.75rem;font-size:12px;color:var(--accent);font-family:var(--mono)}}
-.footer{{text-align:center;font-size:11px;color:var(--muted);margin-top:2rem;font-family:var(--mono)}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <span class="badge">Digital Product Passport</span>
-  <span class="badge-v2">QR-Verknüpft</span>
-  <h1>{PRODUKT}</h1>
-  <p class="sub">{eintrag['Datum']} &nbsp;&middot;&nbsp; {sn}</p>
-  <div class="card">
-    <p class="card-label">Produktionsdaten</p>
-    <div class="metrics">
-      <div class="metric"><label>Temperatur (&oslash;)</label><span class="val">{eintrag['Temperatur']}<span class="unit">&deg;C</span></span></div>
-      <div class="metric"><label>Feuchtigkeit (&oslash;)</label><span class="val">{eintrag['Feuchtigkeit']}<span class="unit">%</span></span></div>
-      <div class="metric full"><label>Aush&auml;rte-Dauer</label><span class="val">{eintrag['Dauer']}<span class="unit"> min</span></span></div>
-    </div>
-  </div>
-  <div class="card">
-    <p class="card-label">Identifikation</p>
-    <div class="row"><span class="dot"></span><span class="key">Segment ID</span><span class="vm">{sn}</span></div>
-    <div class="row"><span class="dot"></span><span class="key">Batch</span><span class="vm">{batch}</span></div>
-    <div class="row"><span class="dot"></span><span class="key">Hersteller</span><span class="vm">{HERSTELLER}</span></div>
-    <div class="row"><span class="dot"></span><span class="key">Material</span><span class="vm">{MATERIAL}</span></div>
-    <div class="row"><span class="dot"></span><span class="key">Status</span><span class="vm" style="color:var(--accent)">Produced</span></div>
-  </div>
-  <div class="card">
-    <p class="card-label">QR-Code &ndash; dieser Passport</p>
-    <div class="qr-wrap">
-      <img src="data:image/png;base64,{qr_b64}" alt="QR Code">
-      <p class="uri">{uri}</p>
-    </div>
-    <a class="single-link" href="?single=1">&rarr; Nur dieser Passport anzeigen</a>
-  </div>
-  <p class="footer">Hyperloop Digital Twin (V2) &middot; {eintrag['Datum']}<br>
-  JSON-LD: <a href="{sn}.jsonld" style="color:var(--accent)">{sn}.jsonld</a></p>
-</div>
-</body>
-</html>"""
-
-
-# ─── QR Code ─────────────────────────────────────────────────────────────────
-
-def erstelle_qr_b64(uri: str) -> str:
-    try:
-        import qrcode
-        qr = qrcode.QRCode(version=None,
-                           error_correction=qrcode.constants.ERROR_CORRECT_M,
-                           box_size=6, border=2)
-        qr.add_data(uri)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        return base64.b64encode(buf.getvalue()).decode()
-    except ImportError:
-        return ""
+def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str = "") -> str:
+    # Nicht mehr verwendet – HTML wird durch passports/viewer.html on-the-fly gerendert
+    return ""
 
 
 
@@ -288,12 +177,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float,
     with open(jsonld_datei, "w", encoding="utf-8") as f:
         json.dump(jsonld, f, indent=2, ensure_ascii=False)
 
-    qr_b64       = erstelle_qr_b64(uri)
-    html_datei   = os.path.join(PASSPORT_DIR, f"{sn}.html")
-    with open(html_datei, "w", encoding="utf-8") as f:
-        f.write(erstelle_html(eintrag, jsonld, qr_b64))
-
-    github_push(sn, [jsonld_datei, html_datei])
+    github_push(sn, [jsonld_datei])
 
     print(f"  [OK] {sn} | {dauer}min | {t_med}°C | URI: {uri}")
     return sn, uri
