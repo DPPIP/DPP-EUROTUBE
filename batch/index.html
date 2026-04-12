@@ -137,24 +137,10 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- SCHRITT 1: BATCH-LABEL SCANNEN -->
-<div id="batch-label-view" class="wrap">
-  <span class="badge">Digital Product Passport</span>
-  <h1>Batch-Label scannen</h1>
-  <p class="sub">QR-Code des neuen Batch-Labels scannen</p>
-  <div id="batch-label-box" style="width:100%;border-radius:12px;overflow:hidden;margin-bottom:1.25rem;background:#000;min-height:220px">
-    <div id="batch-label-reader"></div>
-  </div>
-  <p id="batch-label-status" style="text-align:center;font-family:var(--mono);font-size:13px;color:var(--muted);margin-bottom:1rem">Suche Batch-Label…</p>
-  <button class="token-btn" onclick="showTokenModal()">&#9881; GitHub Token konfigurieren</button>
-</div>
-
-<!-- SCHRITT 2 -->
 <!-- SCANNER VIEW -->
-<div id="scanner-view" class="wrap hidden">
+<div id="scanner-view" class="wrap">
   <span class="badge">Digital Product Passport</span>
   <h1>Segmente scannen</h1>
-  <p id="batch-sn-display" class="sub" style="font-family:var(--mono);color:var(--accent)"></p>
 
   <div id="scanner-box">
     <div id="reader"></div>
@@ -241,8 +227,6 @@ const BSDD_BASE     = 'https://identifier.buildingsmart.org/uri/demo2026/HYPER-D
 const W3ID_BASE     = 'https://w3id.org/hyperloop-dpp';
 const GTIN          = '09999000000001';
 
-var batchSN = null;
-var batchLabelScanner = null;
 
 // ─── TOKEN ───
 function getToken() { return localStorage.getItem('dpp_gh_token') || ''; }
@@ -349,39 +333,10 @@ function init() {
   if (batchId) {
     showBatchViewById(batchId, scannedSN);
   } else {
-    showBatchLabelStep();
+    showScannerView();
   }
 }
 
-function showBatchLabelStep() {
-  document.getElementById('batch-label-view').classList.remove('hidden');
-  document.getElementById('scanner-view').classList.add('hidden');
-  document.getElementById('scanner-footer').classList.add('hidden');
-  document.getElementById('batch-view').classList.add('hidden');
-  startBatchLabelScan();
-}
-
-function startBatchLabelScan() {
-  batchLabelScanner = new Html5Qrcode('batch-label-reader');
-  batchLabelScanner.start(
-    { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 220, height: 220 } },
-    function(decodedText) {
-      var sn = extractSerial(decodedText, '10');
-      if (!sn) { showToast('Kein gültiges Batch-Label'); return; }
-      batchSN = sn;
-      try { batchLabelScanner.stop(); } catch(e) {}
-      document.getElementById('batch-label-view').classList.add('hidden');
-      document.getElementById('scanner-view').classList.remove('hidden');
-      document.getElementById('scanner-footer').classList.remove('hidden');
-      document.getElementById('batch-sn-display').textContent = 'Batch: ' + batchSN;
-      startScanner();
-    },
-    function() {}
-  ).catch(function() {
-    document.getElementById('batch-label-status').textContent = 'Kamera nicht verfügbar';
-  });
-}
 
 function extractSerial(text, ai) {
   // ai = '21' for segment, '10' for batch
@@ -396,7 +351,6 @@ function extractSerial(text, ai) {
 
 // ─── LOAD BATCH BY ID (via manifest) ───
 function showBatchViewById(batchId, scannedSN) {
-  document.getElementById('batch-label-view').classList.add('hidden');
   document.getElementById('scanner-view').classList.add('hidden');
   document.getElementById('scanner-footer').classList.add('hidden');
   document.getElementById('batch-view').classList.remove('hidden');
@@ -621,10 +575,10 @@ function renderScanList() {
 
 
 function createBatch() {
-  if (scannedSNs.length < MAX_ITEMS || !batchSN) return;
+  if (scannedSNs.length < MAX_ITEMS) return;
   try { html5QrCode.stop(); } catch(e) {}
 
-  var batchId = batchSN;
+  var batchId = String(Math.floor(Math.random() * 9000000000) + 1000000000);
   var verbindungsdatum = new Date().toISOString().slice(0, 19);
   var btn = document.getElementById('btn-create');
   btn.textContent = 'Speichern…';
@@ -681,9 +635,8 @@ function copyLink() {
 }
 
 function goToScanner() {
-  batchSN = null;
   scannedSNs = [];
-  showBatchLabelStep();
+  showScannerView();
 }
 
 init();
