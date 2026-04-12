@@ -71,15 +71,8 @@ def extrahiere_id(scanned: str) -> str:
 
 def oeffne_dpp(uri: str):
     sn = uri.split("/")[-1]
-    github_url = f"{GITHUB_PAGES}/{PASSPORT_DIR}/{sn}.html"
-    def _open():
-        try:
-            urllib.request.urlopen(
-                urllib.request.Request(uri, method="HEAD"), timeout=3)
-            webbrowser.open(uri)
-        except Exception:
-            webbrowser.open(github_url)
-    threading.Thread(target=_open, daemon=True).start()
+    viewer_url = f"{GITHUB_PAGES}/passports/viewer.html?sn={sn}"
+    threading.Thread(target=lambda: webbrowser.open(viewer_url), daemon=True).start()
 
 
 # ─── JSON-LD Generator ───────────────────────────────────────────────────────
