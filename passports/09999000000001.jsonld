@@ -11,8 +11,8 @@
   ],
   "@id": "https://w3id.org/hyperloop-dpp/01/09999000000001/21/09999000000001",
   "dpp:status": "active",
-  "dcterms:created": "2026-04-12T19:01:39",
-  "dcterms:modified": "2026-04-12T19:01:39",
+  "dcterms:created": "2026-04-12T19:03:39",
+  "dcterms:modified": "2026-04-12T19:03:39",
   "dcterms:creator": "Eurotube – FHNW",
   "dpp:wasDerivedFrom": {
     "dpp:attributedTo": "Arduino Sensor – Digital Twin SMF",
@@ -20,11 +20,11 @@
   },
   "bsdd:SegmentID": "09999000000001",
   "bsdd:Herstellungsdatum": {
-    "@value": "2026-04-12T19:01:39",
+    "@value": "2026-04-12T19:03:39",
     "@type": "xsd:dateTime"
   },
   "bsdd:DauerInSchalung": {
-    "@value": "17.9",
+    "@value": "2.0",
     "@type": "xsd:decimal"
   },
   "bsdd:AussentemperaturSchalung": {
