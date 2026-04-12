@@ -1,0 +1,31 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "bsdd": "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1/prop/",
+    "dpp": "https://w3id.org/dpp#",
+    "dcterms": "http://purl.org/dc/terms/"
+  },
+  "@type": [
+    "dpp:DigitalProductPassport",
+    "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1/class/HyperloopBatch"
+  ],
+  "@id": "https://w3id.org/hyperloop-dpp/LOT-UNBEKANNT",
+  "dpp:status": "active",
+  "dcterms:created": "2026-04-12T07:56:49",
+  "dcterms:modified": "2026-04-12T07:56:49",
+  "dcterms:creator": "Eurotube – FHNW",
+  "bsdd:BatchID": "LOT-UNBEKANNT",
+  "bsdd:Verbindungsdatum": {
+    "@value": "2026-04-12T07:56:49",
+    "@type": "xsd:dateTime"
+  },
+  "bsdd:VerlinkungBauteile": [
+    "https://w3id.org/hyperloop-dpp/SN-6831481063",
+    "https://w3id.org/hyperloop-dpp/SN-9071709506",
+    "https://w3id.org/hyperloop-dpp/SN-9642660324",
+    "https://w3id.org/hyperloop-dpp/SN-9752530600",
+    "https://w3id.org/hyperloop-dpp/SN-9867341762"
+  ],
+  "bsdd:BatchStatus": "Verbunden",
+  "bsdd:Einbaudatum": null
+}
