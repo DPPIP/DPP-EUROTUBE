@@ -1,1 +1,5 @@
 .claude/
+__pycache__/
+*.pyc
+Arduino_Code/
+prototyp2/passports/
