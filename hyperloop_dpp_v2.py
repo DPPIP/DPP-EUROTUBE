@@ -347,7 +347,7 @@ def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
                        highlightthickness=0)
     canvas.pack()
 
-    status_lbl = tk.Label(dialog, text="Suche QR-Code…",
+    status_lbl = tk.Label(dialog, text="Suche QR-Code oder RFID-Karte…",
                           font=("Courier", 10), bg="#F4F1EC", fg="#7A7870")
     status_lbl.pack(pady=6)
 
@@ -364,7 +364,32 @@ def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
     scanning = [True]
     cap = [None]
 
+    # RFID-Callback registrieren → lese_seriell() kann publiziere() aufrufen
+    global _scan_callback
+
     def publiziere(seg_id: str):
+        # Prüfen ob QR-Code bereits einem Bauteil zugewiesen ist
+        manifest_pfad = os.path.join(PASSPORT_DIR, "manifest.json")
+        try:
+            with open(manifest_pfad, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            if any(e.get("sn") == seg_id for e in manifest):
+                status_lbl.config(
+                    text=f"⛔ {seg_id} bereits vergeben!",
+                    fg="#A03030"
+                )
+                messagebox.showerror(
+                    "Doppelter QR-Code",
+                    f"{seg_id} ist bereits einem Bauteil zugewiesen.\n"
+                    "Bitte einen anderen QR-Code verwenden."
+                )
+                scanning[0] = True   # Scan wieder freigeben
+                return
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass   # Kein Manifest vorhanden → erste Verwendung, OK
+
+        global _scan_callback
+        _scan_callback = None   # Dialog schliesst → kein RFID-Callback mehr
         scanning[0] = False
         if cap[0]:
             cap[0].release()
@@ -384,6 +409,9 @@ def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
 
         threading.Thread(target=_publish, daemon=True).start()
 
+    # Callback registrieren: RFID-Treffer in lese_seriell() → publiziere()
+    _scan_callback = publiziere
+
     def bestaetigen(event=None):
         raw = entry_var.get().strip()
         if raw:
@@ -394,7 +422,8 @@ def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
               font=("Arial", 11), bg="#2D5A3D", fg="white",
               relief="flat", padx=16, pady=6).pack(pady=(0, 4))
     tk.Button(dialog, text="Überspringen",
-              command=lambda: [scanning.__setitem__(0, False),
+              command=lambda: [globals().__setitem__('_scan_callback', None),
+                               scanning.__setitem__(0, False),
                                cap[0].release() if cap[0] else None,
                                dialog.destroy()],
               font=("Arial", 9), bg="#F4F1EC", fg="#7A7870",
@@ -443,6 +472,7 @@ def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
         dialog.after(100, update)
 
     dialog.protocol("WM_DELETE_WINDOW", lambda: [
+        globals().__setitem__('_scan_callback', None),
         scanning.__setitem__(0, False),
         cap[0].release() if cap[0] else None,
         dialog.destroy()
@@ -461,6 +491,10 @@ except Exception as e:
     exit(1)
 
 zyklus: dict = {"start": None, "t": [], "h": []}
+
+# Callback-Slot: wird gesetzt wenn Scan-Dialog offen ist
+# → lese_seriell() ruft ihn bei RFID-Treffer auf
+_scan_callback = None
 
 
 def sende_start():
@@ -497,6 +531,16 @@ def lese_seriell():
             elif msg_type == "sensor" and zyklus["start"]:
                 if "temp" in data: zyklus["t"].append(data["temp"])
                 if "hum"  in data: zyklus["h"].append(data["hum"])
+
+            elif msg_type == "rfid":
+                url = data.get("url", "").strip()
+                if url and _scan_callback:
+                    seg_id = extrahiere_id(url)
+                    print(f"  [RFID] Erkannt: {seg_id}")
+                    root.after(0, lambda sid=seg_id: _scan_callback(sid))
+
+            elif msg_type == "rfid_error":
+                print(f"  [RFID] Fehler: {data.get('msg')}")
 
             elif event in ["system_stopp", "cmd_stopp"] and zyklus["start"]:
                 t_med = round(sum(zyklus["t"]) / len(zyklus["t"]), 1) if zyklus["t"] else 0.0
