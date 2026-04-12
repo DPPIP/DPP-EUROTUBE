@@ -68,10 +68,6 @@ def extrahiere_id(scanned: str) -> str:
     return scanned
 
 
-def batch_nummer() -> str:
-    now = datetime.datetime.now()
-    return f"LOT-{now.year}-{now.isocalendar()[1]:02d}"
-
 
 def oeffne_dpp(uri: str):
     sn = uri.split("/")[-1]

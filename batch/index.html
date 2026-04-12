@@ -619,16 +619,6 @@ function renderScanList() {
   document.getElementById('btn-create').disabled = scannedSNs.length < MAX_ITEMS;
 }
 
-function genBatchId() {
-  // LOT-YYYY-WW basierend auf ISO-Kalenderwoche
-  var now = new Date();
-  var d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  var day = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - day);
-  var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  var week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return 'LOT-' + d.getUTCFullYear() + '-' + String(week).padStart(2, '0');
-}
 
 function createBatch() {
   if (scannedSNs.length < MAX_ITEMS || !batchSN) return;
