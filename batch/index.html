@@ -221,7 +221,7 @@
 const MAX_ITEMS     = 5;
 const PASSPORT_BASE = 'https://DPPIP.github.io/DPP-EUROTUBE/passports/';
 const BATCH_BASE    = 'https://DPPIP.github.io/DPP-EUROTUBE/batch/';
-const MANIFEST_URL  = 'https://DPPIP.github.io/DPP-EUROTUBE/passports/manifest.json';
+// kein Manifest mehr – SNs werden direkt aus batch .jsonld gelesen
 const GITHUB_REPO   = 'DPPIP/DPP-EUROTUBE';
 const GITHUB_BRANCH = 'main';
 const BSDD_BASE     = 'https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1';
@@ -271,32 +271,28 @@ async function githubPut(filePath, content, commitMsg) {
   return res;
 }
 
-async function updateManifest(batchId, sns) {
-  // Manifest laden, Batch-ID für jedes Segment eintragen, zurückschreiben
-  var manifestUrl = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/passports/manifest.json';
+async function updateSegmentJsonlds(batchId, sns) {
+  // Batch-ID direkt in jedes Segment-JSONLD schreiben (kein Manifest)
   var token = getToken();
   var headers = { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' };
 
-  var existing = await fetch(manifestUrl, { headers: headers });
-  if (!existing.ok) throw new Error('Manifest nicht lesbar');
-  var existingJson = await existing.json();
-  var sha = existingJson.sha;
-  var manifest = JSON.parse(atob(existingJson.content.replace(/\n/g, '')));
-
-  // Batch-ID für jedes gescannte Segment setzen
-  sns.forEach(function(sn) {
-    var entry = manifest.find(function(e) { return e.sn === sn; });
-    if (entry) { entry.batch = batchId; }
-  });
-
-  var body = {
-    message: 'Manifest: Batch ' + batchId + ' für ' + sns.join(', '),
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(manifest, null, 2)))),
-    branch:  GITHUB_BRANCH,
-    sha:     sha
-  };
-  var res = await fetch(manifestUrl, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error('Manifest-Update fehlgeschlagen: ' + res.status);
+  for (var i = 0; i < sns.length; i++) {
+    var sn = sns[i];
+    var apiUrl = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/passports/' + sn + '.jsonld';
+    var existing = await fetch(apiUrl, { headers: headers });
+    if (!existing.ok) continue;
+    var existingJson = await existing.json();
+    var sha = existingJson.sha;
+    var jsonld = JSON.parse(atob(existingJson.content.replace(/\n/g, '')));
+    jsonld['bsdd:BatchID'] = batchId;
+    var body = {
+      message: sn + ': BatchID ' + batchId,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(jsonld, null, 2)))),
+      branch:  GITHUB_BRANCH,
+      sha:     sha
+    };
+    await fetch(apiUrl, { method: 'PUT', headers: headers, body: JSON.stringify(body) });
+  }
 }
 
 async function createBatchFile(batchId, sns, verbindungsdatum) {
@@ -368,29 +364,23 @@ function showBatchViewById(batchId, fromFile) {
     banner.querySelector('a[href="?"]').href = '../passports/' + fromFile + '?single=1';
   }
 
-  // Load manifest + batch .jsonld in parallel
-  Promise.all([
-    fetch(MANIFEST_URL).then(function(r){ return r.json(); }).catch(function(){ return []; }),
-    fetch(BATCH_BASE + batchId + '.jsonld').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
-  ]).then(function(results) {
-    var manifest   = results[0];
-    var batchJsonld = results[1];
-    var entries = manifest.filter(function(e) { return e.batch === batchId; });
-    if (entries.length === 0) {
-      document.getElementById('batch-meta').textContent = 'Keine Segmente gefunden für ' + batchId;
+  // SNs + Verbindungsdatum direkt aus batch .jsonld lesen
+  fetch(BATCH_BASE + batchId + '.jsonld', {cache:'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(batchJsonld) {
+      if (!batchJsonld) {
+        document.getElementById('batch-meta').textContent = 'Batch nicht gefunden: ' + batchId;
+        document.getElementById('loading').classList.add('hidden');
+        return;
+      }
+      var verlinkung = batchJsonld['bsdd:VerlinkungBauteile'] || [];
+      var sns = verlinkung.map(function(uri){ return uri.split('/').pop(); });
+      var verbindungsdatum = (batchJsonld['bsdd:Verbindungsdatum'] || {})['@value'] || null;
+      showBatchView(sns, batchId, fromFile, verbindungsdatum);
+    }).catch(function() {
+      document.getElementById('batch-meta').textContent = 'Fehler beim Laden';
       document.getElementById('loading').classList.add('hidden');
-      return;
-    }
-    var sns = entries.map(function(e) { return e.sn; });
-    // Verbindungsdatum aus batch .jsonld
-    var verbindungsdatum = batchJsonld
-      ? ((batchJsonld['bsdd:Verbindungsdatum'] || {})['@value'] || null)
-      : null;
-    showBatchView(sns, batchId, fromFile, verbindungsdatum);
-  }).catch(function() {
-    document.getElementById('batch-meta').textContent = 'Fehler beim Laden';
-    document.getElementById('loading').classList.add('hidden');
-  });
+    });
 }
 
 // ─── BATCH VIEW (core render) ───
@@ -526,13 +516,12 @@ function onScanSuccess(decodedText) {
   // Duplikat in aktueller Session
   if (scannedSNs.indexOf(sn) !== -1) { showToast('⚠ Bereits gescannt: ' + sn); return; }
   if (scannedSNs.length >= MAX_ITEMS) return;
-  // Manifest prüfen: ist SN schon in einem Batch?
-  fetch(MANIFEST_URL, {cache:'no-store'})
-    .then(function(r){ return r.json(); })
-    .then(function(manifest){
-      var entry = manifest.find(function(e){ return e.sn === sn; });
-      if (entry && entry.batch) {
-        showToast('⛔ ' + sn + ' bereits in ' + entry.batch);
+  // Prüfen ob SN bereits in einem Batch (BatchID im jsonld gesetzt)
+  fetch(PASSPORT_BASE + sn + '.jsonld', {cache:'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(jld){
+      if (jld && jld['bsdd:BatchID']) {
+        showToast('⛔ ' + sn + ' bereits in ' + jld['bsdd:BatchID']);
         if (navigator.vibrate) navigator.vibrate([100,50,100]);
         return;
       }
@@ -543,7 +532,6 @@ function onScanSuccess(decodedText) {
       if (scannedSNs.length >= MAX_ITEMS) { try { html5QrCode.stop(); } catch(e) {} }
     })
     .catch(function(){
-      // Bei Fehler trotzdem zulassen (Offline-Fallback)
       scannedSNs.push(sn);
       if (navigator.vibrate) navigator.vibrate(100);
       playBeep();
@@ -600,7 +588,7 @@ function createBatch() {
 
   var sns = scannedSNs.slice();
   createBatchFile(batchId, sns, verbindungsdatum)
-    .then(function() { return updateManifest(batchId, sns); })
+    .then(function() { return updateSegmentJsonlds(batchId, sns); })
     .then(function() {
       btn.textContent = 'Batch erstellen';
       btn.classList.remove('saving');

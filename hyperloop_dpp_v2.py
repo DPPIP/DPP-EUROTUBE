@@ -136,11 +136,10 @@ def erstelle_html(eintrag: dict, jsonld: dict, qr_b64: str) -> str:
 (function() {{
   if (new URLSearchParams(window.location.search).get('single')) return;
   var sn = "{sn}";
-  fetch('https://DPPIP.github.io/DPP-EUROTUBE/passports/manifest.json', {{cache:'no-store'}})
+  fetch('https://DPPIP.github.io/DPP-EUROTUBE/passports/' + sn + '.jsonld', {{cache:'no-store'}})
     .then(function(r){{ return r.json(); }})
-    .then(function(m){{
-      var entry = m.find(function(e){{ return e.sn === sn; }});
-      var b = entry && entry.batch;
+    .then(function(jld){{
+      var b = jld['bsdd:BatchID'];
       if (!b) return;
       return fetch('https://DPPIP.github.io/DPP-EUROTUBE/batch/' + b + '.jsonld', {{method:'HEAD'}})
         .then(function(r) {{
@@ -239,20 +238,6 @@ def erstelle_qr_b64(uri: str) -> str:
         return ""
 
 
-# ─── Manifest ────────────────────────────────────────────────────────────────
-
-def aktualisiere_manifest(sn: str, batch: str, datum: str):
-    pfad = os.path.join(PASSPORT_DIR, "manifest.json")
-    try:
-        with open(pfad, encoding="utf-8") as f:
-            manifest = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        manifest = []
-    manifest = [e for e in manifest if e.get("sn") != sn]
-    manifest.append({"sn": sn, "batch": batch, "datum": datum})
-    with open(pfad, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2, ensure_ascii=False)
-
 
 # ─── GitHub Push ─────────────────────────────────────────────────────────────
 
@@ -308,10 +293,7 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float,
     with open(html_datei, "w", encoding="utf-8") as f:
         f.write(erstelle_html(eintrag, jsonld, qr_b64))
 
-    aktualisiere_manifest(sn, batch, datum)
-    manifest_datei = os.path.join(PASSPORT_DIR, "manifest.json")
-
-    github_push(sn, [jsonld_datei, html_datei, manifest_datei])
+    github_push(sn, [jsonld_datei, html_datei])
 
     print(f"  [OK] {sn} | {dauer}min | {t_med}°C | URI: {uri}")
     return sn, uri
@@ -368,25 +350,25 @@ def zeige_scan_dialog(t_med: float, h_med: float, dauer: float):
     global _scan_callback
 
     def publiziere(seg_id: str):
-        # Prüfen ob QR-Code bereits einem Bauteil zugewiesen ist
-        manifest_pfad = os.path.join(PASSPORT_DIR, "manifest.json")
+        # Prüfen ob QR-Code bereits einem Bauteil zugewiesen ist (HEAD-Check)
         try:
-            with open(manifest_pfad, "r", encoding="utf-8") as f:
-                manifest = json.load(f)
-            if any(e.get("sn") == seg_id for e in manifest):
-                status_lbl.config(
-                    text=f"⛔ {seg_id} bereits vergeben!",
-                    fg="#A03030"
-                )
-                messagebox.showerror(
-                    "Doppelter QR-Code",
-                    f"{seg_id} ist bereits einem Bauteil zugewiesen.\n"
-                    "Bitte einen anderen QR-Code verwenden."
-                )
-                scanning[0] = True   # Scan wieder freigeben
-                return
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass   # Kein Manifest vorhanden → erste Verwendung, OK
+            check_url = f"{GITHUB_PAGES}/{PASSPORT_DIR}/{seg_id}.jsonld"
+            req = urllib.request.Request(check_url, method="HEAD")
+            urllib.request.urlopen(req, timeout=5)
+            # 200 → Datei existiert → bereits vergeben
+            status_lbl.config(text=f"⛔ {seg_id} bereits vergeben!", fg="#A03030")
+            messagebox.showerror(
+                "Doppelter QR-Code",
+                f"{seg_id} ist bereits einem Bauteil zugewiesen.\n"
+                "Bitte einen anderen QR-Code verwenden."
+            )
+            scanning[0] = True
+            return
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                pass  # anderer Fehler → trotzdem erlauben
+        except Exception:
+            pass  # Netzwerkfehler → erlauben
 
         global _scan_callback
         _scan_callback = None   # Dialog schliesst → kein RFID-Callback mehr
