@@ -99,14 +99,15 @@ h1{font-size:24px;font-weight:300;margin:.5rem 0 .25rem}
 
   function render(jld, sn, base) {
     var uri    = jld['@id'] || (base + '/passports/' + sn + '.jsonld');
-    var datum  = val(jld['bsdd:Herstellungsdatum']);
-    var temp   = val(jld['bsdd:AussentemperaturSchalung']);
-    var hum    = val(jld['bsdd:Luftfeuchtigkeit'] || jld['bsdd:Feuchtigkeit']);
-    var dauer  = val(jld['bsdd:DauerInSchalung']);
-    var batch  = jld['bsdd:BatchID'] || '–';
-    var maker  = jld['dcterms:creator'] || '–';
-    var mat    = jld['bsdd:Materialzusammensetzung'] || '–';
-    var status = jld['bsdd:SegmentStatus'] || '–';
+    var datum   = val(jld['bsdd:ManufactoringDate']);
+    var temp    = val(jld['bsdd:ReferenceEnvironmentTemperature']);
+    var hum     = val(jld['bsdd:ReferenceAirRelativeHumidity']);
+    var dauer   = val(jld['bsdd:Schalungsdauer']);
+    var batch   = jld['bsdd:BatchID'] || '–';
+    var maker   = jld['dcterms:creator'] || '–';
+    var beton   = jld['bsdd:StrengthClass'] || '–';
+    var ort     = jld['bsdd:AssemblyPlace'] || '–';
+    var status  = jld['bsdd:Status'] || '–';
 
     document.getElementById('content').innerHTML =
       '<span class="badge">Digital Product Passport</span>' +
@@ -119,19 +120,20 @@ h1{font-size:24px;font-weight:300;margin:.5rem 0 .25rem}
         '<div class="metrics">' +
           '<div class="metric"><label>Temperatur (&oslash;)</label>' +
             '<span class="val">' + temp + '<span class="unit">&deg;C</span></span></div>' +
-          '<div class="metric"><label>Feuchtigkeit (&oslash;)</label>' +
+          '<div class="metric"><label>Luftfeuchtigkeit (&oslash;)</label>' +
             '<span class="val">' + hum + '<span class="unit">%</span></span></div>' +
-          '<div class="metric full"><label>Aush&auml;rte-Dauer</label>' +
-            '<span class="val">' + dauer + '<span class="unit"> min</span></span></div>' +
+          '<div class="metric full"><label>Schalungsdauer</label>' +
+            '<span class="val">' + dauer + '<span class="unit"> h</span></span></div>' +
         '</div>' +
       '</div>' +
 
       '<div class="card">' +
         '<p class="card-label">Identifikation</p>' +
         '<div class="row"><span class="dot"></span><span class="key">Segment ID</span><span class="vm">' + sn + '</span></div>' +
-        '<div class="row"><span class="dot"></span><span class="key">Batch</span><span class="vm">' + batch + '</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Betonsorte</span><span class="vm">' + beton + '</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Herstellungsort</span><span class="vm">' + ort + '</span></div>' +
         '<div class="row"><span class="dot"></span><span class="key">Hersteller</span><span class="vm">' + maker + '</span></div>' +
-        '<div class="row"><span class="dot"></span><span class="key">Material</span><span class="vm">' + mat + '</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Batch</span><span class="vm">' + batch + '</span></div>' +
         '<div class="row"><span class="dot"></span><span class="key">Status</span>' +
           '<span class="vm" style="color:var(--accent)">' + status + '</span></div>' +
       '</div>' +

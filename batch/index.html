@@ -223,7 +223,7 @@ const BATCH_BASE    = 'https://DPPIP.github.io/DPP-EUROTUBE/batch/';
 // kein Manifest mehr – SNs werden direkt aus batch .jsonld gelesen
 const GITHUB_REPO   = 'DPPIP/DPP-EUROTUBE';
 const GITHUB_BRANCH = 'main';
-const BSDD_BASE     = 'https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1';
+const BSDD_BASE     = 'https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.6';
 const W3ID_BASE     = 'https://w3id.org/hyperloop-dpp';
 const GTIN          = '09999000000001';
 
@@ -309,11 +309,14 @@ async function createBatchFile(batchId, sns, verbindungsdatum) {
     'dcterms:created':  verbindungsdatum,
     'dcterms:modified': verbindungsdatum,
     'dcterms:creator':  'Eurotube \u2013 FHNW',
-    'bsdd:BatchID':           batchId,
-    'bsdd:Verbindungsdatum':  { '@value': verbindungsdatum, '@type': 'xsd:dateTime' },
+    'bsdd:Batch_ID':          batchId,
+    'bsdd:Verbindungsdatum':  { '@value': verbindungsdatum, '@type': 'xsd:date' },
     'bsdd:VerlinkungBauteile': sns.map(function(sn){ return W3ID_BASE + '/01/' + GTIN + '/21/' + sn; }),
-    'bsdd:BatchStatus':  'Verbunden',
-    'bsdd:Einbaudatum':  null
+    'bsdd:Status':       'Verbunden',
+    'bsdd:Einbaudatum':  null,
+    'bsdd:Material':         'SikaProof',
+    'bsdd:Spannstahlsorte':  'St1570',
+    'bsdd:Klebertyp':        'PCI'
   };
   var content = JSON.stringify(jsonld, null, 2);
   await githubPut('batch/' + batchId + '.jsonld', content,
@@ -412,15 +415,15 @@ function showBatchView(sns, batchId, fromFile, verbindungsdatum) {
       .then(function(jld) {
         return {
           sn:               sn,
-          datum:            (jld['bsdd:Herstellungsdatum'] || {})['@value'] || '',
-          temperatur:       (jld['bsdd:AussentemperaturSchalung'] || {})['@value'] || null,
-          dauer:            (jld['bsdd:DauerInSchalung'] || {})['@value'] || null,
-          status:           jld['bsdd:SegmentStatus'] || '',
-          uri:              jld['@id'] || (PASSPORT_BASE + sn + '.html'),
+          datum:            (jld['bsdd:ManufactoringDate'] || {})['@value'] || '',
+          temperatur:       (jld['bsdd:ReferenceEnvironmentTemperature'] || {})['@value'] || null,
+          dauer:            (jld['bsdd:Schalungsdauer'] || {})['@value'] || null,
+          status:           jld['bsdd:Status'] || '',
+          uri:              jld['@id'] || (PASSPORT_BASE + sn + '.jsonld'),
           batch:            jld['bsdd:BatchID'] || batchId || '',
           verbindungsdatum: jld['bsdd:Verbindungsdatum'] || null,
           verlinkung:       jld['bsdd:VerlinkungBauteile'] || [],
-          batchStatus:      jld['bsdd:BatchStatus'] || null,
+          batchStatus:      jld['bsdd:Status'] || null,
           einbaudatum:      jld['bsdd:Einbaudatum'] || null
         };
       })
@@ -480,7 +483,7 @@ function renderBatch(sns, results, batchId, verbindungsdatum) {
     html += '<span class="agg-dot"></span>';
     html += '<span class="agg-sn">' + el.sn + '</span>';
     if (!el.error) {
-      html += '<span class="agg-meta">' + (el.temperatur || '–') + '&deg;C · ' + (el.dauer || '–') + ' min</span>';
+      html += '<span class="agg-meta">' + (el.temperatur || '–') + '&deg;C · ' + (el.dauer || '–') + ' h</span>';
       html += '<a class="agg-link" href="' + el.uri + '?single=1" target="_blank">Einzel-DPP &rarr;</a>';
     } else {
       html += '<span class="agg-meta" style="color:var(--danger)">nicht gefunden</span>';

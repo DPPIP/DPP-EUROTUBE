@@ -45,7 +45,9 @@ PASSPORT_DIR   = "passports"
 HERSTELLER  = "Eurotube – FHNW"
 PRODUKT     = "Beton-Fertigelement Typ A"
 MATERIAL    = "Beton C40/50, Bewehrungsstahl B500B"
-BSDD_BASE   = "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.1"
+BSDD_BASE   = "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.6"
+BETONSORTE  = "C25/30"
+HERSTELLUNGSORT = "Koblenz"
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -88,7 +90,8 @@ def erstelle_jsonld(eintrag: dict) -> dict:
         },
         "@type": [
             "dpp:DigitalProductPassport",
-            f"{BSDD_BASE}/class/HyperloopSegment"
+            f"{BSDD_BASE}/class/HyperloopSegment",
+            "IfcBuildingElementProxy"
         ],
         "@id":   uri,
         "dpp:status":       "active",
@@ -99,13 +102,15 @@ def erstelle_jsonld(eintrag: dict) -> dict:
             "dpp:attributedTo": "Arduino Sensor – Digital Twin SMF",
             "dpp:method":       "Automatisiert via Serial-Kommunikation (USB, 9600 Baud)"
         },
-        "bsdd:SegmentID":   eintrag["Serial"],
-        "bsdd:Herstellungsdatum":        {"@value": eintrag["Datum"],          "@type": "xsd:dateTime"},
-        "bsdd:DauerInSchalung":          {"@value": str(eintrag["Dauer"]),     "@type": "xsd:decimal"},
-        "bsdd:AussentemperaturSchalung": {"@value": str(eintrag["Temperatur"]),"@type": "xsd:decimal"},
-        "bsdd:Materialzusammensetzung":  MATERIAL,
-        "bsdd:SegmentStatus":   "Produced",
-        "bsdd:BatchID":            eintrag["Batch"],
+        "bsdd:SegmentID":                  eintrag["Serial"],
+        "bsdd:StrengthClass":              BETONSORTE,
+        "bsdd:AssemblyPlace":              HERSTELLUNGSORT,
+        "bsdd:ManufactoringDate":          {"@value": eintrag["Datum"],                       "@type": "xsd:dateTime"},
+        "bsdd:ReferenceEnvironmentTemperature": {"@value": str(eintrag["Temperatur"]),        "@type": "xsd:decimal"},
+        "bsdd:ReferenceAirRelativeHumidity":    {"@value": str(eintrag["Feuchtigkeit"]),      "@type": "xsd:decimal"},
+        "bsdd:Schalungsdauer":             {"@value": str(round(eintrag["Dauer"] / 60, 2)),   "@type": "xsd:decimal"},
+        "bsdd:Status":          "Hergestellt",
+        "bsdd:BatchID":         eintrag["Batch"],
         "bsdd:Verbindungsdatum":   None,
         "bsdd:VerlinkungBauteile": [],
         "bsdd:BatchStatus":        None,
