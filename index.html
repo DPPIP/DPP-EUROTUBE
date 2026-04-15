@@ -1,1 +1,146 @@
-<h1>DPP Resolver – Eurotube</h1>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPP Eurotube – FHNW</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#F4F1EC;--card:#FDFCFA;--ink:#1A1916;--muted:#7A7870;--accent:#2D5A3D;--accent-light:#EAF2ED;--border:#DDD9D1;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif}
+body{background:var(--bg);font-family:var(--sans);color:var(--ink);padding:2rem 1rem}
+.wrap{max-width:600px;margin:0 auto}
+.badge{background:var(--accent);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.12em;padding:4px 10px;border-radius:4px;text-transform:uppercase;display:inline-block}
+h1{font-size:26px;font-weight:300;margin:.6rem 0 .25rem}
+.sub{font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:1.5rem;line-height:1.6}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.card-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);margin-bottom:.75rem}
+.row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.row:last-child{border-bottom:none}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.key{color:var(--muted);flex:1}
+.vm{font-family:var(--mono);font-size:12px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.link-card{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.5rem;text-decoration:none;transition:all .15s}
+.link-card:hover{background:var(--accent-light);border-color:#b8d9c4;text-decoration:none}
+.link-card .lc-title{font-size:14px;font-weight:500;color:var(--ink)}
+.link-card .lc-desc{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.schema{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem;line-height:1.8;overflow-x:auto;white-space:pre}
+.passport-item{display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px}
+.passport-item:last-child{border-bottom:none}
+.passport-item .p-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.passport-item .p-dot.segment{background:var(--accent)}
+.passport-item .p-dot.batch{background:#2980b9}
+.passport-item .p-sn{flex:1}
+.passport-item .p-link{color:var(--accent);font-size:11px}
+.footer{text-align:center;font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border)}
+.loading{color:var(--muted);font-family:var(--mono);font-size:12px;padding:.5rem 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="badge">Digital Product Passport</span>
+  <h1>Eurotube DPP System</h1>
+  <p class="sub">Digitale Produktpässe für Hyperloop-Betonelemente<br>
+  FHNW – Institut Digitales Bauen</p>
+
+  <!-- Navigation -->
+  <a class="link-card" href="batch/index.html">
+    <div class="lc-title">Batch-Scanner</div>
+    <div class="lc-desc">5 Segmente scannen und zu einem Röhrensegment verbinden</div>
+  </a>
+
+  <a class="link-card" href="https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.6" target="_blank">
+    <div class="lc-title">bSDD Datenkatalog (v0.6)</div>
+    <div class="lc-desc">buildingSMART Data Dictionary – Eigenschaftsdefinitionen</div>
+  </a>
+
+  <a class="link-card" href="https://github.com/DPPIP/DPP-EUROTUBE" target="_blank">
+    <div class="lc-title">GitHub Repository</div>
+    <div class="lc-desc">DPPIP/DPP-EUROTUBE – Quellcode und JSON-LD Dateien</div>
+  </a>
+
+  <!-- URI-Schema -->
+  <div class="card" style="margin-top:1rem">
+    <div class="card-label">URI-Schema (GS1 Digital Link)</div>
+    <div class="schema">Segment  /01/09999000000001/21/{Serial}
+Batch    /01/09999000000001/10/{BatchID}
+
+Basis    https://w3id.org/hyperloop-dpp</div>
+  </div>
+
+  <!-- Architektur -->
+  <div class="card">
+    <div class="card-label">Architektur</div>
+    <div class="schema">Arduino (DHT11 + Servo + RFID)
+  ↕ Seriell (USB, 9600 Baud)
+Python GUI (Tkinter)
+  ↕ Git Push
+GitHub Pages (JSON-LD + Viewer)
+  ↕ ifcopenshell
+IFC-Modell (Pset-Integration)</div>
+  </div>
+
+  <!-- Live Passports -->
+  <div class="card">
+    <div class="card-label">Passports</div>
+    <div id="passport-list"><p class="loading">Lade...</p></div>
+  </div>
+
+  <div class="footer">
+    Eurotube – FHNW | Hyperloop DPP System
+  </div>
+
+</div>
+
+<script>
+(function() {
+  var BASE = 'https://api.github.com/repos/DPPIP/DPP-EUROTUBE/contents/';
+  var PAGES = 'https://DPPIP.github.io/DPP-EUROTUBE';
+  var list = document.getElementById('passport-list');
+
+  Promise.all([
+    fetch(BASE + 'passports').then(function(r){ return r.ok ? r.json() : []; }),
+    fetch(BASE + 'batch').then(function(r){ return r.ok ? r.json() : []; })
+  ]).then(function(results) {
+    var segments = results[0].filter(function(f){ return f.name.endsWith('.jsonld'); });
+    var batches  = results[1].filter(function(f){ return f.name.endsWith('.jsonld'); });
+
+    if (segments.length === 0 && batches.length === 0) {
+      list.innerHTML = '<p style="color:var(--muted);font-family:var(--mono);font-size:12px">Keine Passports vorhanden</p>';
+      return;
+    }
+
+    var html = '';
+
+    batches.forEach(function(f) {
+      var id = f.name.replace('.jsonld', '');
+      html += '<div class="passport-item">' +
+        '<span class="p-dot batch"></span>' +
+        '<span class="p-sn">Batch ' + id + '</span>' +
+        '<a class="p-link" href="batch/index.html?batch=' + id + '">Batch-DPP</a> ' +
+        '<a class="p-link" href="batch/' + f.name + '" target="_blank">JSON-LD</a>' +
+        '</div>';
+    });
+
+    segments.forEach(function(f) {
+      var sn = f.name.replace('.jsonld', '');
+      html += '<div class="passport-item">' +
+        '<span class="p-dot segment"></span>' +
+        '<span class="p-sn">' + sn + '</span>' +
+        '<a class="p-link" href="passports/viewer.html?sn=' + sn + '&single=1">DPP</a> ' +
+        '<a class="p-link" href="passports/' + f.name + '" target="_blank">JSON-LD</a>' +
+        '</div>';
+    });
+
+    list.innerHTML = html;
+  }).catch(function() {
+    list.innerHTML = '<p style="color:var(--muted);font-family:var(--mono);font-size:12px">Konnte Passports nicht laden</p>';
+  });
+})();
+</script>
+</body>
+</html>
