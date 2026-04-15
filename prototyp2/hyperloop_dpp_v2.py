@@ -133,6 +133,8 @@ def github_push(serial_nr: str, dateien: list):
         print(f"  [!] Git-Repo nicht gefunden: {GITHUB_REPO}")
         return
     try:
+        # Zuerst pullen, damit keine Konflikte beim Push entstehen
+        subprocess.run(["git", "-C", GITHUB_REPO, "pull", "--rebase"], check=True)
         for pfad in dateien:
             ziel = os.path.join(GITHUB_REPO, pfad)
             os.makedirs(os.path.dirname(ziel) or GITHUB_REPO, exist_ok=True)
@@ -142,7 +144,6 @@ def github_push(serial_nr: str, dateien: list):
                        [os.path.abspath(os.path.join(GITHUB_REPO, p)) for p in dateien], check=True)
         subprocess.run(["git", "-C", GITHUB_REPO, "commit", "-m",
                         f"DPP {serial_nr} hinzugefügt (V2)"], check=True)
-        subprocess.run(["git", "-C", GITHUB_REPO, "pull", "--rebase"], check=True)
         subprocess.run(["git", "-C", GITHUB_REPO, "push"], check=True)
         print(f"  [OK] GitHub Push: {serial_nr}")
     except subprocess.CalledProcessError as e:
