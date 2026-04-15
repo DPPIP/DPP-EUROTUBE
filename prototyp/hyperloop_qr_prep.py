@@ -101,32 +101,30 @@ def make_pdf(labels: list, path: str):
         text_x = x0 + 2 * mm + qr_size + 2.5 * mm
         center_y = y0 + cell_h / 2
 
-        # SN
-        c.setFillColorRGB(0.1, 0.1, 0.1)
-        c.setFont("Helvetica-Bold", 7.5)
-        c.drawString(text_x, center_y + 6, label["id"])
+        # URI aufteilen
+        uri = label["uri"]
+        if "/01/" in uri and "/21/" in uri:
+            base   = uri.split("/01/")[0] + "/"
+            middle = "01/" + uri.split("/01/")[1].split("/21/")[0] + "/21/"
+            serial = uri.split("/21/")[1]
+        else:
+            base, middle, serial = uri, "", label["id"]
 
         # "Digital Product Passport"
         c.setFont("Helvetica", 5.5)
         c.setFillColorRGB(0.45, 0.45, 0.45)
-        c.drawString(text_x, center_y - 1, "Digital Product Passport")
+        c.drawString(text_x, center_y + 8, "Digital Product Passport")
 
-        # URI: sinnvoll aufgeteilt in 3 Zeilen
-        # Zeile 1: https://w3id.org/hyperloop-dpp/
-        # Zeile 2: 01/09999000000001/21/
-        # Zeile 3: {serial}
+        # URI Zeile 1 + 2 (klein, grau)
         c.setFont("Helvetica", 4.5)
         c.setFillColorRGB(0.65, 0.65, 0.65)
-        uri = label["uri"]
-        if "/01/" in uri and "/21/" in uri:
-            base   = uri.split("/01/")[0] + "/"          # https://w3id.org/hyperloop-dpp/
-            middle = "01/" + uri.split("/01/")[1].split("/21/")[0] + "/21/"  # 01/GTIN/21/
-            serial = uri.split("/21/")[1]                # serial
-        else:
-            base, middle, serial = uri, "", ""
-        c.drawString(text_x, center_y - 9,  base)
-        c.drawString(text_x, center_y - 14, middle)
-        c.drawString(text_x, center_y - 19, serial)
+        c.drawString(text_x, center_y + 1,  base)
+        c.drawString(text_x, center_y - 4, middle)
+
+        # Seriennummer (letzte Zahlen) – fett, gut lesbar
+        c.setFont("Helvetica-Bold", 8)
+        c.setFillColorRGB(0.1, 0.1, 0.1)
+        c.drawString(text_x, center_y - 13, serial)
 
     c.save()
     print(f"  PDF gespeichert: {path}")
