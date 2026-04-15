@@ -205,6 +205,7 @@
     <button class="btn btn-primary" onclick="copyLink()">
       Link kopieren <span id="copied-check" class="copied-feedback">&#10003;</span>
     </button>
+    <a id="jsonld-link" class="btn btn-secondary" href="#" target="_blank" style="display:none;text-decoration:none">JSON-LD anzeigen</a>
     <button class="btn btn-secondary" onclick="goToScanner()">Neuen Batch scannen</button>
   </div>
 
@@ -357,7 +358,7 @@ function showBatchViewById(batchId, scannedSN) {
   document.getElementById('scanner-view').classList.add('hidden');
   document.getElementById('scanner-footer').classList.add('hidden');
   document.getElementById('batch-view').classList.remove('hidden');
-  document.getElementById('batch-title').textContent = batchId;
+  document.getElementById('batch-title').textContent = 'Batch Röhrensegment 10 M';
   document.getElementById('batch-meta').textContent = 'Wird geladen…';
 
   // Show back-banner if redirected from individual passport
@@ -401,13 +402,9 @@ function showBatchView(sns, batchId, fromFile, verbindungsdatum) {
   document.getElementById('scanner-footer').classList.add('hidden');
   document.getElementById('batch-view').classList.remove('hidden');
 
-  if (batchId) {
-    document.getElementById('batch-title').textContent = batchId;
-  }
-
   var today = new Date().toISOString().slice(0, 10);
   document.getElementById('batch-meta').textContent =
-    sns.length + ' Segmente · ' + today;
+    (batchId || '') + ' · ' + sns.length + ' Segmente · ' + today;
 
   var fetches = sns.map(function(sn) {
     return fetch(PASSPORT_BASE + sn + '.jsonld')
@@ -424,7 +421,9 @@ function showBatchView(sns, batchId, fromFile, verbindungsdatum) {
           verbindungsdatum: jld['bsdd:Verbindungsdatum'] || null,
           verlinkung:       jld['bsdd:VerlinkungBauteile'] || [],
           batchStatus:      jld['bsdd:Status'] || null,
-          einbaudatum:      jld['bsdd:Einbaudatum'] || null
+          einbaudatum:      jld['bsdd:Einbaudatum'] || null,
+          betonsorte:       jld['bsdd:StrengthClass'] || null,
+          herstellungsort:  jld['bsdd:AssemblyPlace'] || null,
         };
       })
       .catch(function() { return { sn: sn, error: true }; });
@@ -483,8 +482,13 @@ function renderBatch(sns, results, batchId, verbindungsdatum) {
     html += '<span class="agg-dot"></span>';
     html += '<span class="agg-sn">' + el.sn + '</span>';
     if (!el.error) {
-      html += '<span class="agg-meta">' + (el.temperatur || '–') + '&deg;C · ' + (el.dauer || '–') + ' h</span>';
-      html += '<a class="agg-link" href="' + el.uri + '?single=1" target="_blank">Einzel-DPP &rarr;</a>';
+      var meta = [];
+      if (el.betonsorte) meta.push(el.betonsorte);
+      if (el.herstellungsort) meta.push(el.herstellungsort);
+      if (el.temperatur) meta.push(el.temperatur + '&deg;C');
+      if (el.dauer) meta.push(el.dauer + ' h');
+      html += '<span class="agg-meta">' + meta.join(' · ') + '</span>';
+      html += '<a class="agg-link" href="../passports/viewer.html?sn=' + el.sn + '" target="_blank">DPP &rarr;</a>';
     } else {
       html += '<span class="agg-meta" style="color:var(--danger)">nicht gefunden</span>';
     }
@@ -494,6 +498,11 @@ function renderBatch(sns, results, batchId, verbindungsdatum) {
   tree.innerHTML = html;
   document.getElementById('agg-card').classList.remove('hidden');
   document.getElementById('batch-actions').classList.remove('hidden');
+  var jsonldLink = document.getElementById('jsonld-link');
+  if (batchId) {
+    jsonldLink.href = 'https://DPPIP.github.io/DPP-EUROTUBE/batch/' + batchId + '.jsonld';
+    jsonldLink.style.display = '';
+  }
 }
 
 // ─── SCANNER ───
