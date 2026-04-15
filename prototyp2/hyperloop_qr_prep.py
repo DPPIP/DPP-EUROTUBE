@@ -25,7 +25,7 @@ from io import BytesIO
 
 W3ID_BASE  = "https://w3id.org/hyperloop-dpp"
 GTIN       = "09999000000001"   # GS1 GTIN-14
-COUNT      = 24                 # 3 × 8 = eine A4-Seite
+COUNT      = 11                 # 11 unterschiedliche SNs
 OUTPUT_DIR = "qr_labels"
 
 COLS = 3
@@ -69,14 +69,9 @@ def make_pdf(labels: list, path: str):
 
     W, H = A4  # 595.27 × 841.89 pt
 
-    # Ränder
-    margin_x = 5 * mm
-    margin_y = 5 * mm
-    usable_w = W - 2 * margin_x
-    usable_h = H - 2 * margin_y
-
-    cell_w = usable_w / COLS
-    cell_h = usable_h / ROWS
+    # Randlos: Etiketten füllen die gesamte A4-Seite
+    cell_w = W / COLS
+    cell_h = H / ROWS
 
     c = canvas.Canvas(path, pagesize=A4)
 
@@ -84,21 +79,13 @@ def make_pdf(labels: list, path: str):
         col = i % COLS
         row = i // COLS
 
-        # Ursprung oben-links -> reportlab Koordinaten (0,0 = unten-links)
-        x0 = margin_x + col * cell_w
-        y0 = H - margin_y - (row + 1) * cell_h
+        x0 = col * cell_w
+        y0 = H - (row + 1) * cell_h
 
-        # Rahmen (gestrichelt)
-        c.setStrokeColorRGB(0.75, 0.75, 0.75)
-        c.setLineWidth(0.4)
-        c.setDash(3, 3)
-        c.rect(x0, y0, cell_w, cell_h)
-        c.setDash()  # reset
+        pad = 1.5 * mm
 
-        pad = 2 * mm
-
-        # QR-Code: 90° gedreht, quadratisch, Höhe = Zellhöhe - 2×pad
-        qr_size = cell_h - 2 * pad
+        # QR-Code: 90° gedreht, etwas kleiner als Zellhöhe
+        qr_size = cell_h * 0.78
 
         if label.get("img"):
             img_rotated = label["img"].rotate(90, expand=True)
@@ -106,36 +93,40 @@ def make_pdf(labels: list, path: str):
             img_rotated.save(buf, format="PNG")
             buf.seek(0)
             ir = ImageReader(buf)
-            c.drawImage(ir, x0 + pad, y0 + pad, qr_size, qr_size, mask="auto")
+            # QR vertikal zentriert, kleiner Abstand vom linken Rand
+            qr_y = y0 + (cell_h - qr_size) / 2
+            c.drawImage(ir, x0 + 2 * mm, qr_y, qr_size, qr_size, mask="auto")
 
-        # Seriennummer + URI rechts vom QR
-        text_x = x0 + pad + qr_size + 2 * mm
-        text_max_w = cell_w - qr_size - 3 * pad - 2 * mm
+        # Text rechts vom QR
+        text_x = x0 + 2 * mm + qr_size + 2.5 * mm
+        center_y = y0 + cell_h / 2
 
-        # SN (gross)
+        # SN
         c.setFillColorRGB(0.1, 0.1, 0.1)
-        c.setFont("Helvetica-Bold", 7)
-        c.drawString(text_x, y0 + cell_h - pad - 7, label["id"])
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(text_x, center_y + 6, label["id"])
 
-        # "DPP" Label
+        # "Digital Product Passport"
         c.setFont("Helvetica", 5.5)
         c.setFillColorRGB(0.45, 0.45, 0.45)
-        c.drawString(text_x, y0 + cell_h - pad - 16, "Digital Product Passport")
+        c.drawString(text_x, center_y - 1, "Digital Product Passport")
 
-        # URI (klein, umgebrochen)
+        # URI: sinnvoll aufgeteilt in 3 Zeilen
+        # Zeile 1: https://w3id.org/hyperloop-dpp/
+        # Zeile 2: 01/09999000000001/21/
+        # Zeile 3: {serial}
         c.setFont("Helvetica", 4.5)
-        c.setFillColorRGB(0.6, 0.6, 0.6)
+        c.setFillColorRGB(0.65, 0.65, 0.65)
         uri = label["uri"]
-        # Teile URI in zwei Zeilen auf /21/ Grenze
-        if "/21/" in uri:
-            parts = uri.split("/21/")
-            line1 = parts[0] + "/21/"
-            line2 = parts[1]
+        if "/01/" in uri and "/21/" in uri:
+            base   = uri.split("/01/")[0] + "/"          # https://w3id.org/hyperloop-dpp/
+            middle = "01/" + uri.split("/01/")[1].split("/21/")[0] + "/21/"  # 01/GTIN/21/
+            serial = uri.split("/21/")[1]                # serial
         else:
-            line1 = uri[:len(uri)//2]
-            line2 = uri[len(uri)//2:]
-        c.drawString(text_x, y0 + pad + 9, line1)
-        c.drawString(text_x, y0 + pad + 3, line2)
+            base, middle, serial = uri, "", ""
+        c.drawString(text_x, center_y - 9,  base)
+        c.drawString(text_x, center_y - 14, middle)
+        c.drawString(text_x, center_y - 19, serial)
 
     c.save()
     print(f"  PDF gespeichert: {path}")
@@ -144,25 +135,30 @@ def make_pdf(labels: list, path: str):
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    labels = []
+    # 11 unterschiedliche SNs generieren
+    unique = []
     for _ in range(COUNT):
         serial = generate_serial()
         uri = f"{W3ID_BASE}/01/{GTIN}/21/{serial}"
         print(f"  Generiere {serial} -> {uri}")
         img = make_qr_image(uri)
-        labels.append({"id": serial, "uri": uri, "img": img})
+        unique.append({"id": serial, "uri": uri, "img": img})
+
+    # 2 davon doppelt -> total 13 Etiketten
+    labels = unique + [unique[0], unique[1]]
+    print(f"\n  Duplikate: {unique[0]['id']} (2x), {unique[1]['id']} (2x)")
 
     # PDF
     pdf_path = os.path.join(OUTPUT_DIR, "labels.pdf")
     make_pdf(labels, pdf_path)
 
-    # Manifest
+    # Manifest (nur die 11 eindeutigen SNs)
     manifest_path = os.path.join(OUTPUT_DIR, "prepared.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump([{"id": l["id"], "uri": l["uri"], "used": False}
-                   for l in labels], f, indent=2)
+                   for l in unique], f, indent=2)
 
-    print(f"\n  {COUNT} Labels -> {pdf_path}")
+    print(f"  13 Labels (11 einmalig + 2x2) -> {pdf_path}")
     print(f"  Manifest  -> {manifest_path}")
 
 
