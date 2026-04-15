@@ -1,0 +1,34 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "bsdd": "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.6/prop/",
+    "dpp": "https://w3id.org/dpp#",
+    "dcterms": "http://purl.org/dc/terms/"
+  },
+  "@type": [
+    "dpp:DigitalProductPassport",
+    "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.6/class/HyperloopBatch"
+  ],
+  "@id": "https://w3id.org/hyperloop-dpp/01/09999000000001/10/4873316459",
+  "dpp:status": "active",
+  "dcterms:created": "2026-04-15T10:35:24",
+  "dcterms:modified": "2026-04-15T10:35:24",
+  "dcterms:creator": "Eurotube – FHNW",
+  "bsdd:Batch_ID": "4873316459",
+  "bsdd:Verbindungsdatum": {
+    "@value": "2026-04-15T10:35:24",
+    "@type": "xsd:date"
+  },
+  "bsdd:VerlinkungBauteile": [
+    "https://w3id.org/hyperloop-dpp/01/09999000000001/21/8038081531",
+    "https://w3id.org/hyperloop-dpp/01/09999000000001/21/1966110844",
+    "https://w3id.org/hyperloop-dpp/01/09999000000001/21/4860687236",
+    "https://w3id.org/hyperloop-dpp/01/09999000000001/21/6075117551",
+    "https://w3id.org/hyperloop-dpp/01/09999000000001/21/5554867685"
+  ],
+  "bsdd:Status": "Verbunden",
+  "bsdd:Einbaudatum": null,
+  "bsdd:Material": "SikaProof",
+  "bsdd:Spannstahlsorte": "St1570",
+  "bsdd:Klebertyp": "PCI"
+}
