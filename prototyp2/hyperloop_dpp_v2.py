@@ -109,6 +109,7 @@ def erstelle_jsonld(eintrag: dict) -> dict:
         "bsdd:ReferenceEnvironmentTemperature": {"@value": str(eintrag["Temperatur"]),        "@type": "xsd:decimal"},
         "bsdd:ReferenceAirRelativeHumidity":    {"@value": str(eintrag["Feuchtigkeit"]),      "@type": "xsd:decimal"},
         "bsdd:Schalungsdauer":             {"@value": str(round(eintrag["Dauer"] / 60, 2)),   "@type": "xsd:decimal"},
+        "bsdd:Status":                     "Aktiv",
     }
 
 
