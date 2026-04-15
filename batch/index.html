@@ -403,7 +403,7 @@ function showBatchView(sns, batchId, fromFile, verbindungsdatum) {
 
   var today = new Date().toISOString().slice(0, 10);
   document.getElementById('batch-meta').textContent =
-    (batchId || '') + ' · ' + sns.length + ' Segmente · ' + today;
+    sns.length + ' Segmente · ' + today;
 
   var fetches = sns.map(function(sn) {
     return fetch(PASSPORT_BASE + sn + '.jsonld')
@@ -472,7 +472,7 @@ function renderBatch(sns, results, batchId, verbindungsdatum) {
 
   // Aggregation tree
   var tree = document.getElementById('agg-tree');
-  var html = '<div class="agg-batch"><span class="agg-diamond">&#9671;</span> ' + (batchId || 'Batch') + '</div>';
+  var html = '';
 
   results.forEach(function(el, idx) {
     var isLast = (idx === results.length - 1);
