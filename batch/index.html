@@ -423,6 +423,7 @@ function showBatchView(sns, batchId, fromFile, verbindungsdatum) {
           einbaudatum:      jld['bsdd:Einbaudatum'] || null,
           betonsorte:       jld['bsdd:StrengthClass'] || null,
           herstellungsort:  jld['bsdd:AssemblyPlace'] || null,
+          bauteiltyp:       (function(t){ return Array.isArray(t) ? t : [t]; })(jld['@type'] || []).some(function(t){ return String(t).indexOf('HyperloopSegment') !== -1; }) ? 'Betonelement' : null,
         };
       })
       .catch(function() { return { sn: sn, error: true }; });
@@ -482,6 +483,7 @@ function renderBatch(sns, results, batchId, verbindungsdatum) {
     html += '<span class="agg-sn">' + el.sn + '</span>';
     if (!el.error) {
       var meta = [];
+      if (el.bauteiltyp) meta.push(el.bauteiltyp);
       if (el.betonsorte) meta.push(el.betonsorte);
       if (el.herstellungsort) meta.push(el.herstellungsort);
       if (el.temperatur) meta.push(el.temperatur + '&deg;C');
