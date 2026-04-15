@@ -501,10 +501,10 @@ def lade_liste():
             with open(datei, encoding="utf-8") as f:
                 jld = json.load(f)
             sn    = jld.get("bsdd:SegmentID", os.path.basename(datei).replace(".jsonld", ""))
-            datum = (jld.get("bsdd:Herstellungsdatum") or {}).get("@value", "")
-            temp  = (jld.get("bsdd:AussentemperaturSchalung") or {}).get("@value", "")
-            dauer = (jld.get("bsdd:DauerInSchalung") or {}).get("@value", "")
-            listbox.insert("end", f"  {sn}  |  {datum}  |  {temp}°C  |  {dauer}min")
+            datum = (jld.get("bsdd:ManufactoringDate") or {}).get("@value", "")
+            temp  = (jld.get("bsdd:ReferenceEnvironmentTemperature") or {}).get("@value", "")
+            dauer = (jld.get("bsdd:Schalungsdauer") or {}).get("@value", "")
+            listbox.insert("end", f"  {sn}  |  {datum}  |  {temp}°C  |  {dauer}h")
         except Exception:
             pass
 
