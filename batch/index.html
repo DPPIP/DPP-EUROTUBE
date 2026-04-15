@@ -496,7 +496,7 @@ function renderBatch(sns, results, batchId, verbindungsdatum) {
       if (el.temperatur) meta.push(el.temperatur + '&deg;C');
       if (el.dauer) meta.push(el.dauer + ' h');
       html += '<span class="agg-meta">' + meta.join(' · ') + '</span>';
-      html += '<a class="agg-link" href="../passports/viewer.html?sn=' + el.sn + '" target="_blank">DPP &rarr;</a>';
+      html += '<a class="agg-link" href="../passports/viewer.html?sn=' + el.sn + '&single=1" target="_blank">DPP &rarr;</a>';
     } else {
       html += '<span class="agg-meta" style="color:var(--danger)">nicht gefunden</span>';
     }
