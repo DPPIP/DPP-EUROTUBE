@@ -134,7 +134,7 @@ def github_push(serial_nr: str, dateien: list):
         return
     try:
         # Zuerst pullen, damit keine Konflikte beim Push entstehen
-        subprocess.run(["git", "-C", GITHUB_REPO, "pull", "--rebase"], check=True)
+        subprocess.run(["git", "-C", GITHUB_REPO, "pull", "--rebase", "--autostash"], check=True)
         for pfad in dateien:
             ziel = os.path.join(GITHUB_REPO, pfad)
             os.makedirs(os.path.dirname(ziel) or GITHUB_REPO, exist_ok=True)
