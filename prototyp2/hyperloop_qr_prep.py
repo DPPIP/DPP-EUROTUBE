@@ -2,31 +2,44 @@
 hyperloop_qr_prep.py – QR-Code Vorbereitung
 ============================================
 Erstellt vorgedruckte QR-Code Labels mit W3ID URIs.
-Output: druckbares HTML-Sheet + einzelne PNGs
+
+Output:
+  qr_labels/labels.pdf   – druckbares A4-PDF, 3 Spalten × 8 Zeilen, QR 90° gedreht
+  qr_labels/prepared.json – Manifest der generierten SNs
 
 Verwendung:
     python hyperloop_qr_prep.py
-    → qr_labels/sheet.html  (drucken, ausschneiden, in Kessel legen)
-    → qr_labels/SEG-001.png ... SEG-0xx.png
+
+Abhängigkeiten:
+    pip install qrcode[pil] reportlab
 """
 
 import os
-import base64
+import io
 import json
 import random
+import base64
 from io import BytesIO
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-W3ID_BASE   = "https://w3id.org/hyperloop-dpp"
-GTIN        = "09999000000001"  # GS1 GTIN-14
-COUNT       = 20                # Anzahl QR-Codes generieren
-OUTPUT_DIR  = "qr_labels"      # Ausgabeordner
+W3ID_BASE  = "https://w3id.org/hyperloop-dpp"
+GTIN       = "09999000000001"   # GS1 GTIN-14
+COUNT      = 24                 # 3 × 8 = eine A4-Seite
+OUTPUT_DIR = "qr_labels"
+
+COLS = 3
+ROWS = 8
 
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def make_qr_b64(uri: str) -> str:
+def generate_serial() -> str:
+    return str(random.randint(1000000000, 9999999999))
+
+
+def make_qr_image(uri: str):
+    """Gibt ein PIL-Image des QR-Codes zurück."""
     try:
         import qrcode
         qr = qrcode.QRCode(
@@ -37,22 +50,95 @@ def make_qr_b64(uri: str) -> str:
         )
         qr.add_data(uri)
         qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        buf = BytesIO()
-        img.save(buf, format="PNG")
-        return base64.b64encode(buf.getvalue()).decode()
+        return qr.make_image(fill_color="black", back_color="white").convert("RGB")
     except ImportError:
         print("[!] qrcode nicht installiert: pip install qrcode[pil]")
-        return ""
+        return None
 
 
-def generate_serial() -> str:
-    """Generiert eine zufällige 10-stellige numerische Seriennummer."""
-    return str(random.randint(1000000000, 9999999999))
+def make_pdf(labels: list, path: str):
+    try:
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
+        from reportlab.lib.utils import ImageReader
+        from PIL import Image
+    except ImportError:
+        print("[!] reportlab nicht installiert: pip install reportlab")
+        return
 
+    W, H = A4  # 595.27 × 841.89 pt
 
-def label_id(serial: str) -> str:
-    return serial
+    # Ränder
+    margin_x = 5 * mm
+    margin_y = 5 * mm
+    usable_w = W - 2 * margin_x
+    usable_h = H - 2 * margin_y
+
+    cell_w = usable_w / COLS
+    cell_h = usable_h / ROWS
+
+    c = canvas.Canvas(path, pagesize=A4)
+
+    for i, label in enumerate(labels[:COLS * ROWS]):
+        col = i % COLS
+        row = i // COLS
+
+        # Ursprung oben-links -> reportlab Koordinaten (0,0 = unten-links)
+        x0 = margin_x + col * cell_w
+        y0 = H - margin_y - (row + 1) * cell_h
+
+        # Rahmen (gestrichelt)
+        c.setStrokeColorRGB(0.75, 0.75, 0.75)
+        c.setLineWidth(0.4)
+        c.setDash(3, 3)
+        c.rect(x0, y0, cell_w, cell_h)
+        c.setDash()  # reset
+
+        pad = 2 * mm
+
+        # QR-Code: 90° gedreht, quadratisch, Höhe = Zellhöhe - 2×pad
+        qr_size = cell_h - 2 * pad
+
+        if label.get("img"):
+            img_rotated = label["img"].rotate(90, expand=True)
+            buf = BytesIO()
+            img_rotated.save(buf, format="PNG")
+            buf.seek(0)
+            ir = ImageReader(buf)
+            c.drawImage(ir, x0 + pad, y0 + pad, qr_size, qr_size, mask="auto")
+
+        # Seriennummer + URI rechts vom QR
+        text_x = x0 + pad + qr_size + 2 * mm
+        text_max_w = cell_w - qr_size - 3 * pad - 2 * mm
+
+        # SN (gross)
+        c.setFillColorRGB(0.1, 0.1, 0.1)
+        c.setFont("Helvetica-Bold", 7)
+        c.drawString(text_x, y0 + cell_h - pad - 7, label["id"])
+
+        # "DPP" Label
+        c.setFont("Helvetica", 5.5)
+        c.setFillColorRGB(0.45, 0.45, 0.45)
+        c.drawString(text_x, y0 + cell_h - pad - 16, "Digital Product Passport")
+
+        # URI (klein, umgebrochen)
+        c.setFont("Helvetica", 4.5)
+        c.setFillColorRGB(0.6, 0.6, 0.6)
+        uri = label["uri"]
+        # Teile URI in zwei Zeilen auf /21/ Grenze
+        if "/21/" in uri:
+            parts = uri.split("/21/")
+            line1 = parts[0] + "/21/"
+            line2 = parts[1]
+        else:
+            line1 = uri[:len(uri)//2]
+            line2 = uri[len(uri)//2:]
+        c.drawString(text_x, y0 + pad + 9, line1)
+        c.drawString(text_x, y0 + pad + 3, line2)
+
+    c.save()
+    print(f"  PDF gespeichert: {path}")
 
 
 def main():
@@ -61,76 +147,23 @@ def main():
     labels = []
     for _ in range(COUNT):
         serial = generate_serial()
-        lid = label_id(serial)
-        uri = f"{W3ID_BASE}/01/{GTIN}/21/{lid}"
-        print(f"  Generiere {lid} -> {uri}  [GS1 SGTIN]")
+        uri = f"{W3ID_BASE}/01/{GTIN}/21/{serial}"
+        print(f"  Generiere {serial} -> {uri}")
+        img = make_qr_image(uri)
+        labels.append({"id": serial, "uri": uri, "img": img})
 
-        qrb64 = make_qr_b64(uri)
+    # PDF
+    pdf_path = os.path.join(OUTPUT_DIR, "labels.pdf")
+    make_pdf(labels, pdf_path)
 
-        # PNG speichern
-        if qrb64:
-            png_data = base64.b64decode(qrb64)
-            with open(os.path.join(OUTPUT_DIR, f"{lid}.png"), "wb") as f:
-                f.write(png_data)
-
-        labels.append({"id": lid, "uri": uri, "qrb64": qrb64})
-
-    # Manifest der vorbereiteten Labels
+    # Manifest
     manifest_path = os.path.join(OUTPUT_DIR, "prepared.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump([{"id": l["id"], "uri": l["uri"], "used": False}
                    for l in labels], f, indent=2)
 
-    # Druckbares HTML-Sheet
-    sheet_path = os.path.join(OUTPUT_DIR, "sheet.html")
-    with open(sheet_path, "w", encoding="utf-8") as f:
-        f.write(make_sheet_html(labels))
-
-    print(f"\n  {COUNT} Labels erstellt -> {OUTPUT_DIR}/sheet.html")
-    print(f"  Manifest -> {manifest_path}")
-
-
-def make_sheet_html(labels: list) -> str:
-    cards = ""
-    for l in labels:
-        cards += f"""
-        <div class="label">
-          <img src="data:image/png;base64,{l['qrb64']}" alt="{l['id']}">
-          <div class="lid">{l['id']}</div>
-          <div class="uri">{l['uri']}</div>
-        </div>"""
-
-    return f"""<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>Hyperloop QR Labels</title>
-<style>
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: monospace; background: #fff; }}
-  h1 {{ font-size: 14px; font-weight: normal; padding: 12px 16px;
-        border-bottom: 1px solid #ccc; color: #555; }}
-  .grid {{ display: flex; flex-wrap: wrap; padding: 8px; gap: 8px; }}
-  .label {{
-    width: 120px; border: 1px dashed #aaa; border-radius: 4px;
-    padding: 8px; text-align: center; page-break-inside: avoid;
-  }}
-  .label img {{ width: 100px; height: 100px; display: block; margin: 0 auto 6px; }}
-  .lid {{ font-size: 13px; font-weight: bold; letter-spacing: .05em; }}
-  .uri {{ font-size: 7px; color: #888; word-break: break-all; margin-top: 3px; line-height: 1.3; }}
-  @media print {{
-    h1 {{ display: none; }}
-    .grid {{ padding: 0; gap: 6px; }}
-    .label {{ border: 1px solid #999; }}
-  }}
-</style>
-</head>
-<body>
-  <h1>Hyperloop DPP – QR Labels ({W3ID_BASE})</h1>
-  <div class="grid">{cards}
-  </div>
-</body>
-</html>"""
+    print(f"\n  {COUNT} Labels -> {pdf_path}")
+    print(f"  Manifest  -> {manifest_path}")
 
 
 if __name__ == "__main__":
