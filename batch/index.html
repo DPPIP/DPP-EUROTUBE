@@ -85,11 +85,13 @@
   .agg-batch{display:flex;align-items:center;gap:.5rem;font-size:14px;font-weight:500;
     color:var(--ink);margin-bottom:.25rem}
   .agg-diamond{font-size:18px;color:var(--accent)}
-  .agg-row{display:flex;align-items:center;gap:0;padding:.3rem 0;border-bottom:1px solid var(--border)}
+  .agg-row{display:flex;align-items:center;gap:0;padding:.5rem 0;border-bottom:1px solid var(--border)}
   .agg-row:last-child{border-bottom:none}
-  .agg-prefix{color:var(--muted);white-space:pre;font-size:14px;line-height:1;margin-right:.35rem}
-  .agg-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-right:.5rem}
-  .agg-sn{flex:1;font-size:12px}
+  .agg-prefix{color:var(--muted);white-space:pre;font-size:14px;line-height:1;margin-right:.35rem;align-self:center}
+  .agg-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-right:.5rem;align-self:center}
+  .agg-info{flex:1;display:flex;flex-direction:column;gap:1px}
+  .agg-type{font-size:13px;font-weight:500;color:var(--ink)}
+  .agg-sn{font-size:11px;color:var(--muted)}
   .agg-meta{font-size:11px;color:var(--muted);margin-left:.5rem}
   .agg-link{color:var(--accent);text-decoration:none;font-size:11px;margin-left:.5rem;flex-shrink:0}
   .agg-link:hover{text-decoration:underline}
@@ -480,7 +482,12 @@ function renderBatch(sns, results, batchId, verbindungsdatum) {
     html += '<div class="agg-row">';
     html += '<span class="agg-prefix">' + prefix + '</span>';
     html += '<span class="agg-dot"></span>';
+    html += '<div class="agg-info">';
+    if (!el.error) {
+      html += '<span class="agg-type">' + (el.bauteiltyp || 'Segment') + '</span>';
+    }
     html += '<span class="agg-sn">' + el.sn + '</span>';
+    html += '</div>';
     if (!el.error) {
       var meta = [];
       if (el.bauteiltyp) meta.push(el.bauteiltyp);
