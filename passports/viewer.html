@@ -99,43 +99,28 @@ h1{font-size:24px;font-weight:300;margin:.5rem 0 .25rem}
 
   function render(jld, sn, base) {
     var uri    = jld['@id'] || (base + '/passports/' + sn + '.jsonld');
-    var datum   = val(jld['bsdd:ManufactoringDate']);
-    var temp    = val(jld['bsdd:ReferenceEnvironmentTemperature']);
-    var hum     = val(jld['bsdd:ReferenceAirRelativeHumidity']);
-    var dauer   = val(jld['bsdd:Schalungsdauer']);
-    var batch   = jld['bsdd:BatchID'] || '–';
-    var maker   = jld['dcterms:creator'] || '–';
-    var beton   = jld['bsdd:StrengthClass'] || '–';
-    var ort     = jld['bsdd:AssemblyPlace'] || '–';
-    var status  = jld['bsdd:Status'] || '–';
+    var beton  = jld['bsdd:StrengthClass'] || '–';
+    var ort    = jld['bsdd:AssemblyPlace'] || '–';
+    var datum  = val(jld['bsdd:ManufactoringDate']);
+    var temp   = val(jld['bsdd:ReferenceEnvironmentTemperature']);
+    var dauer  = val(jld['bsdd:Schalungsdauer']);
+    var status = jld['bsdd:Status'] || '–';
+    var hum    = val(jld['bsdd:ReferenceAirRelativeHumidity']);
 
     document.getElementById('content').innerHTML =
       '<span class="badge">Digital Product Passport</span>' +
       '<span class="badge-v2">QR-Verknüpft</span>' +
       '<h1>Beton-Fertigelement Typ A</h1>' +
-      '<p class="sub">' + datum + ' &nbsp;&middot;&nbsp; ' + sn + '</p>' +
+      '<p class="sub">' + sn + '</p>' +
 
       '<div class="card">' +
-        '<p class="card-label">Produktionsdaten</p>' +
-        '<div class="metrics">' +
-          '<div class="metric"><label>Temperatur (&oslash;)</label>' +
-            '<span class="val">' + temp + '<span class="unit">&deg;C</span></span></div>' +
-          '<div class="metric"><label>Luftfeuchtigkeit (&oslash;)</label>' +
-            '<span class="val">' + hum + '<span class="unit">%</span></span></div>' +
-          '<div class="metric full"><label>Schalungsdauer</label>' +
-            '<span class="val">' + dauer + '<span class="unit"> h</span></span></div>' +
-        '</div>' +
-      '</div>' +
-
-      '<div class="card">' +
-        '<p class="card-label">Identifikation</p>' +
-        '<div class="row"><span class="dot"></span><span class="key">Segment ID</span><span class="vm">' + sn + '</span></div>' +
         '<div class="row"><span class="dot"></span><span class="key">Betonsorte</span><span class="vm">' + beton + '</span></div>' +
         '<div class="row"><span class="dot"></span><span class="key">Herstellungsort</span><span class="vm">' + ort + '</span></div>' +
-        '<div class="row"><span class="dot"></span><span class="key">Hersteller</span><span class="vm">' + maker + '</span></div>' +
-        '<div class="row"><span class="dot"></span><span class="key">Batch</span><span class="vm">' + batch + '</span></div>' +
-        '<div class="row"><span class="dot"></span><span class="key">Status</span>' +
-          '<span class="vm" style="color:var(--accent)">' + status + '</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Herstellungsdatum</span><span class="vm">' + datum + '</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Herstellungstemperatur</span><span class="vm">' + temp + ' &deg;C</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Dauer in der Schalung</span><span class="vm">' + dauer + ' h</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Status</span><span class="vm" style="color:var(--accent)">' + status + '</span></div>' +
+        '<div class="row"><span class="dot"></span><span class="key">Luftfeuchtigkeit</span><span class="vm">' + hum + ' %</span></div>' +
       '</div>' +
 
       '<div class="card">' +

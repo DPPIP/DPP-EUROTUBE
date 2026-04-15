@@ -103,18 +103,12 @@ def erstelle_jsonld(eintrag: dict) -> dict:
             "dpp:method":       "Automatisiert via Serial-Kommunikation (USB, 9600 Baud)"
         },
         "bsdd:SegmentID":                  eintrag["Serial"],
-        "bsdd:StrengthClass":              BETONSORTE,
-        "bsdd:AssemblyPlace":              HERSTELLUNGSORT,
+        "bsdd:StrengthClass":              eintrag.get("Betonsorte", BETONSORTE),
+        "bsdd:AssemblyPlace":              eintrag.get("Herstellungsort", HERSTELLUNGSORT),
         "bsdd:ManufactoringDate":          {"@value": eintrag["Datum"],                       "@type": "xsd:dateTime"},
         "bsdd:ReferenceEnvironmentTemperature": {"@value": str(eintrag["Temperatur"]),        "@type": "xsd:decimal"},
         "bsdd:ReferenceAirRelativeHumidity":    {"@value": str(eintrag["Feuchtigkeit"]),      "@type": "xsd:decimal"},
         "bsdd:Schalungsdauer":             {"@value": str(round(eintrag["Dauer"] / 60, 2)),   "@type": "xsd:decimal"},
-        "bsdd:Status":          "Hergestellt",
-        "bsdd:BatchID":         eintrag["Batch"],
-        "bsdd:Verbindungsdatum":   None,
-        "bsdd:VerlinkungBauteile": [],
-        "bsdd:BatchStatus":        None,
-        "bsdd:Einbaudatum":        None,
     }
 
 
@@ -157,17 +151,17 @@ def speichere_und_publiziere(t_med: float, h_med: float, dauer: float,
     """Erstellt DPP mit gescannter Segment-ID."""
     sn    = segment_id
     uri   = f"{W3ID_BASE}/01/{GTIN}/21/{sn}"
-    batch = ""   # wird erst beim Batch-Scan in batch/index.html gesetzt
     datum = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     eintrag = {
-        "Datum":        datum,
-        "Temperatur":   t_med,
-        "Feuchtigkeit": h_med,
-        "Dauer":        dauer,
-        "Batch":        batch,
-        "Serial":       sn,
-        "uri":          uri
+        "Datum":           datum,
+        "Temperatur":      t_med,
+        "Feuchtigkeit":    h_med,
+        "Dauer":           dauer,
+        "Serial":          sn,
+        "uri":             uri,
+        "Betonsorte":      betonsorte_var.get().strip() or BETONSORTE,
+        "Herstellungsort": herstellungsort_var.get().strip() or HERSTELLUNGSORT,
     }
 
     os.makedirs(PASSPORT_DIR, exist_ok=True)
@@ -456,6 +450,29 @@ uri_label.bind("<Enter>",
                lambda e: uri_label.config(cursor="hand2", font=("Arial", 8, "underline")))
 uri_label.bind("<Leave>",
                lambda e: uri_label.config(cursor="", font=("Arial", 8)))
+
+# ─── Eingabefelder Betonsorte / Herstellungsort ──────────────────────────────
+
+input_frame = tk.Frame(root, bg="#F4F1EC")
+input_frame.pack(pady=(8, 4))
+
+tk.Label(input_frame, text="Betonsorte:", font=("Arial", 9), bg="#F4F1EC", fg="#7A7870"
+         ).grid(row=0, column=0, sticky="e", padx=(0, 6))
+betonsorte_var = tk.StringVar(value=BETONSORTE)
+tk.Entry(input_frame, textvariable=betonsorte_var, font=("Courier", 10), width=16,
+         relief="flat", highlightthickness=1,
+         highlightbackground="#DDD9D1", highlightcolor="#2D5A3D"
+         ).grid(row=0, column=1, ipady=4, padx=(0, 16))
+
+tk.Label(input_frame, text="Herstellungsort:", font=("Arial", 9), bg="#F4F1EC", fg="#7A7870"
+         ).grid(row=0, column=2, sticky="e", padx=(0, 6))
+herstellungsort_var = tk.StringVar(value=HERSTELLUNGSORT)
+tk.Entry(input_frame, textvariable=herstellungsort_var, font=("Courier", 10), width=16,
+         relief="flat", highlightthickness=1,
+         highlightbackground="#DDD9D1", highlightcolor="#2D5A3D"
+         ).grid(row=0, column=3, ipady=4)
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 frame = tk.Frame(root, bg="#F4F1EC")
 frame.pack(pady=10)
