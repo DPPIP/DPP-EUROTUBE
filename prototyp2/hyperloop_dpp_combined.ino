@@ -100,7 +100,7 @@ void leseRFID() {
   byte size = sizeof(buffer);
   String fullData = "";
 
-  // Authentifizierung Sektor 1 (Block 4)
+  // Authentifizierung Sektor 1 (Block 4) und lese Blöcke 4–6
   status = mfrc522.PCD_Authenticate(
     MFRC522::PICC_CMD_MF_AUTH_KEY_A, 4, &rfidKey, &(mfrc522.uid)
   );
@@ -109,13 +109,22 @@ void leseRFID() {
     mfrc522.PICC_HaltA();
     return;
   }
-
-  // Blöcke 4–6 lesen
   for (byte block = 4; block <= 6; block++) {
     status = mfrc522.MIFARE_Read(block, buffer, &size);
     if (status == MFRC522::STATUS_OK) {
-      for (byte i = 0; i < 16; i++) {
-        fullData += (char)buffer[i];
+      for (byte i = 0; i < 16; i++) fullData += (char)buffer[i];
+    }
+  }
+
+  // Authentifizierung Sektor 2 (Block 8) und lese Blöcke 8–10
+  status = mfrc522.PCD_Authenticate(
+    MFRC522::PICC_CMD_MF_AUTH_KEY_A, 8, &rfidKey, &(mfrc522.uid)
+  );
+  if (status == MFRC522::STATUS_OK) {
+    for (byte block = 8; block <= 10; block++) {
+      status = mfrc522.MIFARE_Read(block, buffer, &size);
+      if (status == MFRC522::STATUS_OK) {
+        for (byte i = 0; i < 16; i++) fullData += (char)buffer[i];
       }
     }
   }
