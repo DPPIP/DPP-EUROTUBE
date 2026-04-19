@@ -30,6 +30,21 @@ DPP-EUROTUBE/
 │   └── qr_labels/
 │       ├── labels.pdf                 ← Druckbare Etiketten
 │       └── prepared.json              ← Manifest der generierten SNs
+├── hardware/
+│   ├── 3d_print/                      ← STL-Dateien für 3D-Druck (Schalung + Tisch)
+│   │   ├── EuroTube_Mold_Left.stl
+│   │   ├── EuroTube_Mold_Left_V2.stl
+│   │   ├── EuroTube_Mold_Right.stl
+│   │   ├── EuroTube__Mold_Right_V2.stl
+│   │   ├── EuroTube_Table.stl
+│   │   ├── EuroTube__Table_V2.stl
+│   │   └── EuroTube_Tubesegment.stl
+│   └── arduino/
+│       ├── sketch.ino                 ← Arduino-Sketch (Wokwi)
+│       ├── diagram.json               ← Elektronisches Schema (Wokwi)
+│       ├── libraries.txt              ← Bibliotheksliste
+│       ├── wokwi-project.txt          ← Wokwi-Projekt-Link
+│       └── komponenten.md             ← Komponentenliste
 ├── passports/
 │   ├── viewer.html                    ← Einzel-DPP Viewer (Web)
 │   └── *.jsonld                       ← Generierte Segment-Passports
@@ -47,7 +62,39 @@ DPP-EUROTUBE/
 
 ---
 
-## 1. Arduino – `hyperloop_dpp_combined.ino`
+## 1. Hardware
+
+### Komponenten
+
+| Kategorie | Komponente |
+|---|---|
+| Mikrocontroller | Arduino Uno |
+| Module und Sensoren | RFID-Modul RC522 |
+| | DHT22 / DHT11 |
+| Eingabe und Ausgabe | 2 Servomotoren |
+| | Drucktaster |
+| Verkabelung und Prototyping | Steckbrett, Widerstand, Jumperkabel |
+| Stromversorgung | Batteriepack (4 × 1.5 V) |
+
+### Elektronisches Schema
+
+Das Schaltschema ist als Wokwi-Simulation verfügbar:  
+`hardware/arduino/diagram.json` – importierbar unter https://wokwi.com/projects/461746891808954369
+
+### 3D-Druckteile
+
+Die physische Schalung (SMF) wurde als Prototyp gedruckt. Die STL-Dateien liegen unter `hardware/3d_print/`:
+
+| Datei | Beschreibung |
+|---|---|
+| `EuroTube_Mold_Left.stl` / `_V2.stl` | Linke Schalungshälfte |
+| `EuroTube_Mold_Right.stl` / `_V2.stl` | Rechte Schalungshälfte |
+| `EuroTube_Table.stl` / `_V2.stl` | Produktionstisch |
+| `EuroTube_Tubesegment.stl` | Röhrensegment-Modell |
+
+---
+
+## 2. Arduino – `hyperloop_dpp_combined.ino`
 
 ### Zweck
 Steuert die physische Hardware: DHT11-Sensor (Temperatur/Feuchtigkeit), Servo (Schalung öffnen/schliessen), MFRC522 (RFID/NFC-Leser).
@@ -94,7 +141,7 @@ Steuert die physische Hardware: DHT11-Sensor (Temperatur/Feuchtigkeit), Servo (S
 
 ---
 
-## 2. Python GUI – `hyperloop_dpp.py`
+## 3. Python GUI – `hyperloop_dpp.py`
 
 ### Zweck
 Desktop-Anwendung (Tkinter) zur Produktionssteuerung. Empfängt Sensordaten vom Arduino, erstellt JSON-LD Passports und pusht sie via Git auf GitHub Pages.
@@ -172,7 +219,7 @@ Polling-Funktion (alle 100 ms via `root.after`). Verarbeitet JSON-Nachrichten vo
 
 ---
 
-## 3. QR-Label-Generator – `hyperloop_qr_prep.py`
+## 4. QR-Label-Generator – `hyperloop_qr_prep.py`
 
 ### Zweck
 Generiert druckbare QR-Code-Etiketten als A4-PDF. Jedes Label enthält eine eindeutige GS1 Digital Link URI.
@@ -209,7 +256,7 @@ pip install qrcode[pil] reportlab
 
 ---
 
-## 4. Web-Viewer – `passports/viewer.html`
+## 5. Web-Viewer – `passports/viewer.html`
 
 ### Zweck
 Rendert ein einzelnes Segment-DPP im Browser. Wird auf GitHub Pages gehostet, Daten werden per Fetch aus den `.jsonld`-Dateien geladen.
@@ -239,7 +286,7 @@ Rendert ein einzelnes Segment-DPP im Browser. Wird auf GitHub Pages gehostet, Da
 
 ---
 
-## 5. Batch-Viewer – `batch/index.html`
+## 6. Batch-Viewer – `batch/index.html`
 
 ### Zweck
 Zwei Modi in einer Datei:
@@ -276,7 +323,7 @@ Zwei Modi in einer Datei:
 
 ---
 
-## 6. IFC-Integration – `add_dpp_links.py` / `add_dpp_data.py`
+## 7. IFC-Integration – `add_dpp_links.py` / `add_dpp_data.py`
 
 ### Zweck
 Schreibt DPP-Informationen in ein bestehendes IFC-Modell (IP3.ifc) via ifcopenshell.
