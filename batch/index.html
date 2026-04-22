@@ -540,7 +540,7 @@ function startScanner() {
     },
     {
       fps: 15,
-      qrbox: function(w, h) { var s = Math.min(w, h) * 0.85; return { width: s, height: s }; },
+      qrbox: function(w, h) { var s = Math.min(w, h) * 0.6; return { width: s, height: s }; },
       aspectRatio: 1.333,
       experimentalFeatures: { useBarCodeDetectorIfSupported: true }
     },
