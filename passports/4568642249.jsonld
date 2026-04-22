@@ -14,9 +14,9 @@
   "dpp:status": "active",
   "dcterms:created": "2026-04-22T14:20:40",
   "dcterms:modified": "2026-04-22T14:20:40",
-  "dcterms:creator": "Eurotube â FHNW",
+  "dcterms:creator": "Eurotube Ã¢ÂÂ FHNW",
   "dpp:wasDerivedFrom": {
-    "dpp:attributedTo": "Arduino Sensor â Digital Twin SMF",
+    "dpp:attributedTo": "Arduino Sensor Ã¢ÂÂ Digital Twin SMF",
     "dpp:method": "Automatisiert via Serial-Kommunikation (USB, 9600 Baud)"
   },
   "bsdd:SegmentID": "4568642249",
