@@ -530,34 +530,15 @@ function showScannerView() {
 function startScanner() {
   if (html5QrCode) { try { html5QrCode.stop(); } catch(e) {} }
   html5QrCode = new Html5Qrcode('reader');
-
-  var config = {
-    fps: 15,
-    qrbox: function(w, h) { var s = Math.min(w, h) * 0.6; return { width: s, height: s }; },
-    aspectRatio: 1.333,
-    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-  };
-
-  // Stufe 1: mit 1080p
   html5QrCode.start(
-    { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-    config, onScanSuccess, function() {}
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+    onScanSuccess,
+    function() {}
   ).catch(function() {
-    // Stufe 2: nur facingMode
-    html5QrCode.start(
-      { facingMode: 'environment' },
-      config, onScanSuccess, function() {}
-    ).catch(function() {
-      // Stufe 3: keine Constraints
-      html5QrCode.start(
-        true,
-        config, onScanSuccess, function() {}
-      ).catch(function() {
-        document.getElementById('scanner-box').innerHTML =
-          '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px">' +
-          'Kamera-Zugriff nicht m&ouml;glich.<br>Bitte Berechtigung erteilen.</div>';
-      });
-    });
+    document.getElementById('scanner-box').innerHTML =
+      '<div style="padding:2rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:13px">' +
+      'Kamera-Zugriff nicht m&ouml;glich.<br>Bitte Berechtigung erteilen.</div>';
   });
 }
 
