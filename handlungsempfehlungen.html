@@ -28,10 +28,9 @@
       max-height: 100%;
     }
 
-    #btn-fullscreen {
+    #btn-fullscreen, #btn-download {
       position: fixed;
       bottom: 20px;
-      right: 20px;
       background: rgba(255,255,255,0.15);
       color: #fff;
       border: 1px solid rgba(255,255,255,0.3);
@@ -42,11 +41,15 @@
       backdrop-filter: blur(6px);
       transition: background 0.2s;
       z-index: 10;
+      text-decoration: none;
     }
-    #btn-fullscreen:hover { background: rgba(255,255,255,0.3); }
+    #btn-fullscreen { right: 20px; }
+    #btn-download   { right: 140px; }
+    #btn-fullscreen:hover, #btn-download:hover { background: rgba(255,255,255,0.3); }
 
-    /* Im echten Fullscreen-Modus Button ausblenden */
-    :fullscreen #btn-fullscreen { display: none; }
+    /* Im echten Fullscreen-Modus Buttons ausblenden */
+    :fullscreen #btn-fullscreen,
+    :fullscreen #btn-download { display: none; }
   </style>
 </head>
 <body>
@@ -55,6 +58,7 @@
   </div>
 
   <button id="btn-fullscreen" onclick="openFullscreen()">⛶ Vollbild</button>
+  <a id="btn-download" href="Handlungsempfehlungen_DPP.pdf" download="Handlungsempfehlungen_DPP.pdf">⬇ Download</a>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
