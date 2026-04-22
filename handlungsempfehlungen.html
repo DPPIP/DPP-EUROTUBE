@@ -6,19 +6,51 @@
   <title>Handlungsempfehlungen DPP – Eurotube</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; }
-    iframe {
+    html, body {
+      width: 100%; height: 100%;
+      background: #111;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas {
       display: block;
-      width: 100vw;
-      height: 100vh;
-      border: none;
+      max-width: 100vw;
+      max-height: 100vh;
     }
   </style>
 </head>
 <body>
-  <iframe
-    src="Handlungsempfehlungen_DPP.pdf"
-    title="Handlungsempfehlungen DPP">
-  </iframe>
+  <canvas id="pdf-canvas"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const canvas = document.getElementById('pdf-canvas');
+    const ctx    = canvas.getContext('2d');
+
+    function render(page) {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const viewport0 = page.getViewport({ scale: 1 });
+      const scale = Math.min(vw / viewport0.width, vh / viewport0.height);
+      const viewport = page.getViewport({ scale });
+
+      canvas.width  = viewport.width;
+      canvas.height = viewport.height;
+
+      page.render({ canvasContext: ctx, viewport });
+    }
+
+    pdfjsLib.getDocument('Handlungsempfehlungen_DPP.pdf').promise
+      .then(pdf => pdf.getPage(1))
+      .then(page => {
+        render(page);
+        window.addEventListener('resize', () => render(page));
+      });
+  </script>
 </body>
 </html>
