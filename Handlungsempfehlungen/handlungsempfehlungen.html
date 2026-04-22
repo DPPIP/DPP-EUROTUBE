@@ -50,12 +50,14 @@
     #btn-fullscreen { bottom: 20px; }
     #btn-download   { bottom: 70px; }
     #btn-github     { bottom: 120px; }
-    #btn-fullscreen:hover, #btn-download:hover, #btn-github:hover { background: rgba(255,255,255,0.3); }
+    #btn-qr         { bottom: 170px; }
+    #btn-fullscreen:hover, #btn-download:hover, #btn-github:hover, #btn-qr:hover { background: rgba(255,255,255,0.3); }
 
     /* Im echten Fullscreen-Modus Buttons ausblenden */
     :fullscreen #btn-fullscreen,
     :fullscreen #btn-download,
-    :fullscreen #btn-github { display: none; }
+    :fullscreen #btn-github,
+    :fullscreen #btn-qr { display: none; }
   </style>
 </head>
 <body>
@@ -66,8 +68,32 @@
   <button id="btn-fullscreen" onclick="openFullscreen()">Vollbild</button>
   <a id="btn-download" href="Handlungsempfehlungen_DPP.pdf" download="Handlungsempfehlungen_DPP.pdf">Download</a>
   <a id="btn-github" href="https://github.com/DPPIP/DPP-EUROTUBE" target="_blank">GitHub</a>
+  <button id="btn-qr" onclick="toggleQR()">QR-Code</button>
+
+  <!-- QR Modal -->
+  <div id="qr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+    z-index:20;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;display:flex;
+      align-items:center;gap:16px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <!-- Label links -->
+      <div style="writing-mode:vertical-rl;transform:rotate(180deg);
+        font-family:'Century Gothic','Futura','Trebuchet MS',sans-serif;
+        font-size:13px;letter-spacing:.05em;color:#222;white-space:nowrap">
+        IP3 – FS26 &nbsp; FHNW x EuroTube
+      </div>
+      <!-- QR -->
+      <div id="qr-canvas"></div>
+      <!-- Label rechts -->
+      <div style="writing-mode:vertical-rl;
+        font-family:'Century Gothic','Futura','Trebuchet MS',sans-serif;
+        font-size:13px;letter-spacing:.05em;color:#222;white-space:nowrap">
+        DPP Empfehlungen
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -108,6 +134,26 @@
     // Nach Vollbild-Wechsel neu rendern (Auflösung anpassen)
     document.addEventListener('fullscreenchange', () => {
       if (currentPage) render(currentPage);
+    });
+
+    // QR-Code
+    var qrGenerated = false;
+    function toggleQR() {
+      var modal = document.getElementById('qr-modal');
+      var visible = modal.style.display === 'flex';
+      if (visible) { modal.style.display = 'none'; return; }
+      if (!qrGenerated) {
+        new QRCode(document.getElementById('qr-canvas'), {
+          text: window.location.href,
+          width: 200, height: 200,
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        qrGenerated = true;
+      }
+      modal.style.display = 'flex';
+    }
+    document.getElementById('qr-modal').addEventListener('click', function(e) {
+      if (e.target === this) this.style.display = 'none';
     });
   </script>
 </body>
