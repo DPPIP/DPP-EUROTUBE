@@ -73,21 +73,17 @@
   <!-- QR Modal -->
   <div id="qr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
     z-index:20;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;display:flex;
-      align-items:center;gap:16px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
-      <!-- Label links -->
-      <div style="writing-mode:vertical-rl;transform:rotate(180deg);
-        font-family:'Century Gothic','Futura','Trebuchet MS',sans-serif;
-        font-size:13px;letter-spacing:.05em;color:#222;white-space:nowrap">
-        IP3 – FS26 &nbsp; FHNW x EuroTube
-      </div>
-      <!-- QR -->
-      <div id="qr-canvas"></div>
-      <!-- Label rechts -->
-      <div style="writing-mode:vertical-rl;
-        font-family:'Century Gothic','Futura','Trebuchet MS',sans-serif;
-        font-size:13px;letter-spacing:.05em;color:#222;white-space:nowrap">
+    <div style="background:#fff;border-radius:14px;padding:28px 32px;
+      display:flex;flex-direction:column;align-items:center;gap:16px;
+      box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <div style="font-family:'Century Gothic','Futura','Trebuchet MS',sans-serif;
+        font-size:16px;font-weight:600;letter-spacing:.05em;color:#111">
         DPP Empfehlungen
+      </div>
+      <div id="qr-canvas"></div>
+      <div style="font-family:'Century Gothic','Futura','Trebuchet MS',sans-serif;
+        font-size:12px;letter-spacing:.06em;color:#555">
+        IP3 – FS26 &nbsp;|&nbsp; FHNW x EuroTube
       </div>
     </div>
   </div>
@@ -145,7 +141,7 @@
       if (!qrGenerated) {
         new QRCode(document.getElementById('qr-canvas'), {
           text: window.location.href,
-          width: 200, height: 200,
+          width: 280, height: 280,
           correctLevel: QRCode.CorrectLevel.H
         });
         qrGenerated = true;
