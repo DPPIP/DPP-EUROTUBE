@@ -1,17 +1,5 @@
 # DPP Hyperloop – Eurotube / FHNW
 
-## About
-
-Prototyp eines **Digitalen Produktpass-Systems (DPP)** für Beton-Röhrensegmente des Eurotube-Hyperloops, entwickelt im Rahmen des Integrationsprojekts IP3 an der FHNW (HS25/FS26).
-
-Das System erfasst Produktionsdaten (Temperatur, Luftfeuchtigkeit, Schalungsdauer) direkt an der Smart Mobile Factory, verknüpft sie mit einer eindeutigen GS1 Digital Link URI und publiziert den Passport als JSON-LD auf GitHub Pages – scanbar per QR-Code oder RFID. Batches aus je 5 Segmenten werden zu einem Röhrensegment zusammengefasst. Die DPP-Daten werden zusätzlich ins IFC-Modell geschrieben.
-
-**Technologien:** Arduino · Python (Tkinter) · JSON-LD · bSDD 0.6 · GS1 Digital Link · W3ID · GitHub Pages · ifcopenshell
-
-**Live:** https://dppip.github.io/DPP-EUROTUBE
-
----
-
 ## Übersicht
 
 Das System erstellt **Digitale Produktpässe (DPP)** für Beton-Fertigelemente eines Hyperloop-Prototyps. Es besteht aus vier Schichten:
