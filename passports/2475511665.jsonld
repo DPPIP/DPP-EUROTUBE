@@ -1,0 +1,42 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "bsdd": "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.6/prop/",
+    "dpp": "https://w3id.org/dpp#",
+    "dcterms": "http://purl.org/dc/terms/"
+  },
+  "@type": [
+    "dpp:DigitalProductPassport",
+    "https://identifier.buildingsmart.org/uri/demo2026/HYPER-DPP/0.6/class/HyperloopSegment",
+    "IfcBuildingElementProxy"
+  ],
+  "@id": "https://w3id.org/hyperloop-dpp/01/09999000000001/21/2475511665",
+  "dpp:status": "active",
+  "dcterms:created": "2026-04-22T15:52:59",
+  "dcterms:modified": "2026-04-22T15:52:59",
+  "dcterms:creator": "Eurotube – FHNW",
+  "dpp:wasDerivedFrom": {
+    "dpp:attributedTo": "Arduino Sensor – Digital Twin SMF",
+    "dpp:method": "Automatisiert via Serial-Kommunikation (USB, 9600 Baud)"
+  },
+  "bsdd:SegmentID": "2475511665",
+  "bsdd:StrengthClass": "C25/30",
+  "bsdd:AssemblyPlace": "Koblenz",
+  "bsdd:ManufactoringDate": {
+    "@value": "2026-04-22T15:52:59",
+    "@type": "xsd:dateTime"
+  },
+  "bsdd:ReferenceEnvironmentTemperature": {
+    "@value": "24.7",
+    "@type": "xsd:decimal"
+  },
+  "bsdd:ReferenceAirRelativeHumidity": {
+    "@value": "25.0",
+    "@type": "xsd:decimal"
+  },
+  "bsdd:Schalungsdauer": {
+    "@value": "0.17",
+    "@type": "xsd:decimal"
+  },
+  "bsdd:Status": "Aktiv"
+}
