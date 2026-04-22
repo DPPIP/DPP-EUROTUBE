@@ -70,13 +70,16 @@
     let   currentPage = null;
 
     function render(page) {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const vp0  = page.getViewport({ scale: 1 });
-      const scale = Math.min(vw / vp0.width, vh / vp0.height);
-      const vp   = page.getViewport({ scale });
+      const vw  = window.innerWidth;
+      const vh  = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      const vp0 = page.getViewport({ scale: 1 });
+      const scale = Math.min(vw / vp0.width, vh / vp0.height) * dpr;
+      const vp  = page.getViewport({ scale });
       canvas.width  = vp.width;
       canvas.height = vp.height;
+      canvas.style.width  = (vp.width  / dpr) + 'px';
+      canvas.style.height = (vp.height / dpr) + 'px';
       page.render({ canvasContext: ctx, viewport: vp });
     }
 
