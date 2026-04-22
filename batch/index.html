@@ -151,6 +151,28 @@
   <p class="counter">Gescannt: <strong><span id="count">0</span>/5</strong></p>
   <ul id="scan-list" class="scan-list"></ul>
 
+  <!-- Manuell / Bild -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-label">Manuell hinzufügen</div>
+    <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+      <input id="manual-input" type="text" placeholder="Seriennummer oder URL einfügen…"
+        style="flex:1;font-family:var(--mono);font-size:13px;padding:.55rem .75rem;
+        border:1px solid var(--border);border-radius:8px;background:var(--bg);outline:none"
+        onkeydown="if(event.key==='Enter')addManual()">
+      <button onclick="addManual()" class="btn btn-primary" style="width:auto;padding:.55rem 1rem;font-size:13px">
+        +
+      </button>
+    </div>
+    <label style="display:flex;align-items:center;gap:.5rem;font-size:12px;color:var(--muted);
+      font-family:var(--mono);cursor:pointer">
+      <input type="file" accept="image/*" id="qr-file" style="display:none" onchange="scanFile(this)">
+      <span onclick="document.getElementById('qr-file').click()"
+        style="background:var(--bg);border:1px solid var(--border);border-radius:6px;
+        padding:4px 10px;cursor:pointer;color:var(--ink)">Bild hochladen</span>
+      QR-Code aus Foto
+    </label>
+  </div>
+
   <button id="btn-create" class="btn btn-primary" disabled onclick="createBatch()">
     Batch erstellen
   </button>
@@ -531,7 +553,7 @@ function startScanner() {
   html5QrCode = new Html5Qrcode('reader');
   html5QrCode.start(
     { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+    { fps: 10, qrbox: { width: 300, height: 300 }, aspectRatio: 1.0 },
     onScanSuccess,
     function() {}
   ).catch(function() {
@@ -675,6 +697,26 @@ function copyLink() {
 function goToScanner() {
   scannedSNs = [];
   showScannerView();
+}
+
+// ─── MANUELL ───
+function addManual() {
+  var raw = document.getElementById('manual-input').value.trim();
+  if (!raw) return;
+  document.getElementById('manual-input').value = '';
+  var sn = extractSerial(raw, '21') || extractSerial(raw, '10') || raw;
+  onScanSuccess('https://w3id.org/hyperloop-dpp/01/09999000000001/21/' + sn);
+}
+
+// ─── BILD HOCHLADEN ───
+function scanFile(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  input.value = '';
+  var scanner = new Html5Qrcode('reader');
+  scanner.scanFile(file, true)
+    .then(function(text) { onScanSuccess(text); })
+    .catch(function() { showToast('Kein QR-Code erkannt'); });
 }
 
 init();
