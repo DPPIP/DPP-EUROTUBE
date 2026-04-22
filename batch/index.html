@@ -531,7 +531,13 @@ function startScanner() {
   if (html5QrCode) { try { html5QrCode.stop(); } catch(e) {} }
   html5QrCode = new Html5Qrcode('reader');
   html5QrCode.start(
-    { facingMode: 'environment' },
+    {
+      facingMode: 'environment',
+      width:  { ideal: 1920 },
+      height: { ideal: 1080 },
+      focusMode: 'continuous',
+      advanced: [{ focusMode: 'continuous' }]
+    },
     {
       fps: 15,
       qrbox: function(w, h) { var s = Math.min(w, h) * 0.85; return { width: s, height: s }; },
