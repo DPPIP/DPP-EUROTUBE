@@ -1,4 +1,16 @@
-# Code-Dokumentation – DPP Hyperloop (Eurotube / FHNW)
+# DPP Hyperloop – Eurotube / FHNW
+
+## About
+
+Prototyp eines **Digitalen Produktpass-Systems (DPP)** für Beton-Röhrensegmente des Eurotube-Hyperloops, entwickelt im Rahmen des Integrationsprojekts IP3 an der FHNW (HS25/FS26).
+
+Das System erfasst Produktionsdaten (Temperatur, Luftfeuchtigkeit, Schalungsdauer) direkt an der Smart Mobile Factory, verknüpft sie mit einer eindeutigen GS1 Digital Link URI und publiziert den Passport als JSON-LD auf GitHub Pages – scanbar per QR-Code oder RFID. Batches aus je 5 Segmenten werden zu einem Röhrensegment zusammengefasst. Die DPP-Daten werden zusätzlich ins IFC-Modell geschrieben.
+
+**Technologien:** Arduino · Python (Tkinter) · JSON-LD · bSDD 0.6 · GS1 Digital Link · W3ID · GitHub Pages · ifcopenshell
+
+**Live:** https://dppip.github.io/DPP-EUROTUBE
+
+---
 
 ## Übersicht
 
@@ -22,41 +34,43 @@ Das System erstellt **Digitale Produktpässe (DPP)** für Beton-Fertigelemente e
 
 ```
 DPP-EUROTUBE/
+├── index.html                              ← Landing Page (GitHub Pages)
+├── README.md
 ├── prototyp_final/
-│   ├── hyperloop_dpp.py              ← Haupt-Python-Skript (GUI + Logik)
+│   ├── hyperloop_dpp.py                    ← Haupt-Python-Skript (GUI + Logik)
+│   ├── hyperloop_qr_prep.py               ← QR-Label-Generator (PDF)
 │   ├── hyperloop_dpp_combined/
-│   │   └── hyperloop_dpp_combined.ino ← Arduino-Sketch
-│   ├── hyperloop_qr_prep.py          ← QR-Label-Generator (PDF)
+│   │   └── hyperloop_dpp_combined.ino     ← Arduino-Sketch (Final)
 │   └── qr_labels/
-│       ├── labels.pdf                 ← Druckbare Etiketten
-│       └── prepared.json              ← Manifest der generierten SNs
+│       ├── labels.pdf                      ← Druckbare QR-Etiketten (A4)
+│       └── prepared.json                   ← Manifest der generierten SNs
 ├── hardware/
-│   ├── 3d_print/                      ← STL-Dateien für 3D-Druck (Schalung + Tisch)
-│   │   ├── EuroTube_Mold_Left.stl
-│   │   ├── EuroTube_Mold_Left_V2.stl
-│   │   ├── EuroTube_Mold_Right.stl
-│   │   ├── EuroTube__Mold_Right_V2.stl
-│   │   ├── EuroTube_Table.stl
-│   │   ├── EuroTube__Table_V2.stl
+│   ├── 3d_print/                           ← STL-Dateien (Schalung + Tisch)
+│   │   ├── EuroTube_Mold_Left.stl / _V2.stl
+│   │   ├── EuroTube_Mold_Right.stl / _V2.stl
+│   │   ├── EuroTube_Table.stl / _V2.stl
 │   │   └── EuroTube_Tubesegment.stl
 │   └── arduino/
-│       ├── sketch.ino                 ← Arduino-Sketch (Wokwi)
-│       ├── diagram.json               ← Elektronisches Schema (Wokwi)
-│       ├── libraries.txt              ← Bibliotheksliste
-│       ├── wokwi-project.txt          ← Wokwi-Projekt-Link
-│       └── komponenten.md             ← Komponentenliste
+│       ├── sketch.ino                      ← Arduino-Sketch (Wokwi)
+│       ├── diagram.json                    ← Elektronisches Schema (Wokwi)
+│       ├── libraries.txt                   ← Bibliotheksliste
+│       ├── wokwi-project.txt               ← Wokwi-Projekt-Link
+│       └── komponenten.md                  ← Komponentenliste
 ├── passports/
-│   ├── viewer.html                    ← Einzel-DPP Viewer (Web)
-│   └── *.jsonld                       ← Generierte Segment-Passports
+│   ├── viewer.html                         ← Einzel-DPP Viewer (Web)
+│   └── *.jsonld                            ← Generierte Segment-Passports
 ├── batch/
-│   ├── index.html                     ← Batch-Viewer + Scanner (Web)
-│   └── *.jsonld                       ← Generierte Batch-Passports
+│   ├── index.html                          ← Batch-Viewer + Scanner (Web)
+│   └── *.jsonld                            ← Generierte Batch-Passports
 ├── IFC/
-│   ├── IP3.ifc                        ← Quell-IFC-Modell
-│   ├── add_dpp_links.py               ← V1: Nur URLs ins IFC
-│   ├── add_dpp_data.py                ← V2: Alle DPP-Daten ins IFC
-│   ├── IP3_DPP_v1.ifc                ← Output V1
-│   └── IP3_DPP_v2.ifc                ← Output V2
+│   ├── IP3.ifc                             ← Quell-IFC-Modell
+│   ├── add_dpp_links.py                    ← V1: DPP-URLs ins IFC
+│   ├── add_dpp_data.py                     ← V2: Alle DPP-Daten ins IFC
+│   ├── IP3_DPP_Batchlinks.ifc             ← Output V1
+│   └── IP3_DPP_abgefüllt.ifc             ← Output V2
+├── Handlungsempfehlungen/
+│   ├── handlungsempfehlungen.html          ← Viewer (GitHub Pages)
+│   └── Handlungsempfehlungen_DPP.pdf      ← PDF
 └── .gitignore
 ```
 
