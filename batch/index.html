@@ -541,18 +541,32 @@ function startScanner() {
 function onScanSuccess(decodedText) {
   var sn = extractSerial(decodedText, '21');
   if (!sn) return;
-  // Duplikat in aktueller Session
-  if (scannedSNs.indexOf(sn) !== -1) { showToast('⚠ Bereits gescannt: ' + sn); return; }
+  // 1. Max 5
   if (scannedSNs.length >= MAX_ITEMS) return;
-  // Prüfen ob SN bereits in einem Batch (BatchID im jsonld gesetzt)
+  // 2. Duplikat in aktueller Session
+  if (scannedSNs.indexOf(sn) !== -1) { showToast('Bereits gescannt: ' + sn); return; }
+
   fetch(PASSPORT_BASE + sn + '.jsonld', {cache:'no-store'})
-    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(r){
+      // 3. Passport muss existieren
+      if (!r.ok) { showToast('DPP nicht gefunden: ' + sn); return null; }
+      return r.json();
+    })
     .then(function(jld){
-      if (jld && jld['bsdd:BatchID']) {
-        showToast('⛔ ' + sn + ' bereits in ' + jld['bsdd:BatchID']);
+      if (!jld) return;
+      // 4. Passport muss gefüllt sein (Status = Aktiv)
+      if (!jld['bsdd:Status'] || jld['bsdd:Status'] !== 'Aktiv') {
+        showToast('DPP nicht ausgefüllt: ' + sn);
         if (navigator.vibrate) navigator.vibrate([100,50,100]);
         return;
       }
+      // 5. Darf noch nicht in einem Batch sein
+      if (jld['bsdd:BatchID']) {
+        showToast('Bereits in Batch ' + jld['bsdd:BatchID'] + ': ' + sn);
+        if (navigator.vibrate) navigator.vibrate([100,50,100]);
+        return;
+      }
+      // OK – hinzufügen
       scannedSNs.push(sn);
       if (navigator.vibrate) navigator.vibrate(100);
       playBeep();
@@ -560,11 +574,7 @@ function onScanSuccess(decodedText) {
       if (scannedSNs.length >= MAX_ITEMS) { try { html5QrCode.stop(); } catch(e) {} }
     })
     .catch(function(){
-      scannedSNs.push(sn);
-      if (navigator.vibrate) navigator.vibrate(100);
-      playBeep();
-      renderScanList();
-      if (scannedSNs.length >= MAX_ITEMS) { try { html5QrCode.stop(); } catch(e) {} }
+      showToast('Fehler beim Laden: ' + sn);
     });
 }
 
