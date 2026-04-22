@@ -328,6 +328,9 @@ async function createBatchFile(batchId, sns, verbindungsdatum) {
 let scannedSNs = [];
 let html5QrCode = null;
 let audioCtx = null;
+let lastScanned = null;
+let lastScannedTime = 0;
+const SCAN_COOLDOWN_MS = 3000; // 3s Sperre pro Code
 
 // ─── INIT ───
 function init() {
@@ -541,9 +544,14 @@ function startScanner() {
 function onScanSuccess(decodedText) {
   var sn = extractSerial(decodedText, '21');
   if (!sn) return;
-  // 1. Max 5
+  // 1. Cooldown – gleicher Code wird 3s ignoriert
+  var now = Date.now();
+  if (sn === lastScanned && now - lastScannedTime < SCAN_COOLDOWN_MS) return;
+  lastScanned = sn;
+  lastScannedTime = now;
+  // 2. Max 5
   if (scannedSNs.length >= MAX_ITEMS) return;
-  // 2. Duplikat in aktueller Session
+  // 3. Duplikat in aktueller Session
   if (scannedSNs.indexOf(sn) !== -1) { showToast('Bereits gescannt: ' + sn); return; }
 
   fetch(PASSPORT_BASE + sn + '.jsonld', {cache:'no-store'})
